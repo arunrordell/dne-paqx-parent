@@ -68,194 +68,152 @@ public class AddSdsNodeToProtectionDomain extends BaseWorkflowDelegate
         this.repository = repository;
     }
 
-//    /**
-//     * set Host to protection domain
-//     *
-//     * @param protectionDomain
-//     * @param name
-//     * @param sdsIpList
-//     * @param deviceInfoList
-//     * @return
-//     */
-//    private HostToProtectionDomain setHostToProtectionDomain(String protectionDomain, String name, List<SdsIp> sdsIpList,
-//            final List<DeviceInfo> deviceInfoList)
-//    {
-//        /**
-//         * Creating the request message
-//         */
-//        HostToProtectionDomain hostToProtectionDomain = new HostToProtectionDomain();
-//        hostToProtectionDomain.setProtectionDomainId(protectionDomain);
-//        hostToProtectionDomain.setName(name);
-//        hostToProtectionDomain.setSdsIpList(sdsIpList);
-//        hostToProtectionDomain.setDeviceInfoList(deviceInfoList);
-//        return hostToProtectionDomain;
-//    }
+    /**
+     * get Sds names
+     *
+     * @param nodeDetail
+     * @return
+     */
+    private String getSdsName(NodeDetail nodeDetail)
+    {
+        String name = null;
+        String esxiManagementHostname = nodeDetail.getEsxiManagementHostname();
+        if (esxiManagementHostname != null)
+        {
+            String hostDomain = repository.getDomainName();
+            if (!esxiManagementHostname.contains(hostDomain))
+            {
+                esxiManagementHostname = esxiManagementHostname + "." + hostDomain;
+            }
+            name = (esxiManagementHostname + "-ESX");
+        }
+        else if (nodeDetail.getEsxiManagementIpAddress() != null)
+        {
+            name = (nodeDetail.getEsxiManagementIpAddress() + "-ESX");
+        }
 
-//    /**
-//     * get Sds names
-//     *
-//     * @param nodeDetail
-//     * @return
-//     */
-//    private String getSdsName(NodeDetail nodeDetail)
-//    {
-//        String name = null;
-//        String esxiManagementHostname = nodeDetail.getEsxiManagementHostname();
-//        if (esxiManagementHostname != null)
-//        {
-//            String hostDomain = repository.getDomainName();
-//            if (!esxiManagementHostname.contains(hostDomain))
-//            {
-//                esxiManagementHostname = esxiManagementHostname + "." + hostDomain;
-//            }
-//            name = (esxiManagementHostname + "-ESX");
-//        }
-//        else if (nodeDetail.getEsxiManagementIpAddress() != null)
-//        {
-//            name = (nodeDetail.getEsxiManagementIpAddress() + "-ESX");
-//        }
-//
-//        return name;
-//    }
+        return name;
+    }
 
-//    /**
-//     * Create Sds Ip list from input
-//     *
-//     * @param nodeDetail
-//     * @return
-//     */
-//    private List<SdsIp> createSdsIps(NodeDetail nodeDetail)
-//    {
-//        String ScaleIoData1IP = nodeDetail.getScaleIoData1SvmIpAddress();
-//        String ScaleIoData2IP = nodeDetail.getScaleIoData2SvmIpAddress();
-//
-//        SdsIp sdsIp1 = new SdsIp();
-//        SdsIpDetails sdsIpDetails1 = new SdsIpDetails();
-//        sdsIpDetails1.setIp(ScaleIoData1IP);
-//        sdsIpDetails1.setRole(SdsIpDetails.Role.ALL);
-//        sdsIp1.setSdsIpDetails(sdsIpDetails1);
-//
-//        SdsIp sdsIp2 = new SdsIp();
-//        SdsIpDetails sdsIpDetails2 = new SdsIpDetails();
-//        sdsIpDetails2.setIp(ScaleIoData2IP);
-//        sdsIpDetails2.setRole(SdsIpDetails.Role.ALL);
-//        sdsIp2.setSdsIpDetails(sdsIpDetails2);
-//
-//        List<SdsIp> sdsIpList = new ArrayList<>();
-//        sdsIpList.add(0, sdsIp1);
-//        sdsIpList.add(1, sdsIp2);
-//        return sdsIpList;
-//    }
+    /**
+     * Create Sds Ip list from input
+     *
+     * @param nodeDetail
+     * @return
+     */
+    private List<SdsIp> createSdsIps(NodeDetail nodeDetail)
+    {
+        String ScaleIoData1IP = nodeDetail.getScaleIoData1SvmIpAddress();
+        String ScaleIoData2IP = nodeDetail.getScaleIoData2SvmIpAddress();
 
-//    /**
-//     * set Host to protection domain
-//     *
-//     * @param protectionDomain
-//     * @param name
-//     * @param sdsIpList
-//     * @param deviceInfoList
-//     * @return
-//     */
-//    private HostToProtectionDomain createHostToProtectionDomain(String protectionDomain, String name, List<SdsIp> sdsIpList,
-//            final List<DeviceInfo> deviceInfoList)
-//    {
-//        /**
-//         * Creating the request message
-//         */
-//        HostToProtectionDomain hostToProtectionDomain = new HostToProtectionDomain();
-//        hostToProtectionDomain.setProtectionDomainId(protectionDomain);
-//        hostToProtectionDomain.setName(name);
-//        hostToProtectionDomain.setSdsIpList(sdsIpList);
-//        hostToProtectionDomain.setDeviceInfoList(deviceInfoList);
-//
-//        return hostToProtectionDomain;
-//    }
+        SdsIp sdsIp1 = new SdsIp();
+        SdsIpDetails sdsIpDetails1 = new SdsIpDetails();
+        sdsIpDetails1.setIp(ScaleIoData1IP);
+        sdsIpDetails1.setRole(SdsIpDetails.Role.ALL);
+        sdsIp1.setSdsIpDetails(sdsIpDetails1);
 
-//    private List<DeviceInfo> createDeviceInfoList(Map<String, DeviceAssignment> deviceToDeviceStoragePoolAssignment)
-//    {
-//
-//        List<DeviceInfo> returnVal = null;
-//
-//        if (deviceToDeviceStoragePoolAssignment != null)
-//        {
-//            //spaces are NOT allowed in the deviceName, so we will replace any spaces with '/'
-//            // '/' is a valid character for deviceName
-//            //the deviceName tends to look like "/dev/sda scsi" so it will change to "/dev/sda/scsi"
-//            returnVal = deviceToDeviceStoragePoolAssignment.values().stream().filter(Objects::nonNull)
-//                    .map(ddspa -> new DeviceInfo(ddspa.getLogicalName(), ddspa.getStoragePoolId(), null)).collect(Collectors.toList());
-//        }
-//        return returnVal;
-//    }
+        SdsIp sdsIp2 = new SdsIp();
+        SdsIpDetails sdsIpDetails2 = new SdsIpDetails();
+        sdsIpDetails2.setIp(ScaleIoData2IP);
+        sdsIpDetails2.setRole(SdsIpDetails.Role.ALL);
+        sdsIp2.setSdsIpDetails(sdsIpDetails2);
+
+        List<SdsIp> sdsIpList = new ArrayList<>();
+        sdsIpList.add(0, sdsIp1);
+        sdsIpList.add(1, sdsIp2);
+        return sdsIpList;
+    }
+
+    /**
+     * Create Host to protection domain
+     *
+     * @param protectionDomain
+     * @param name
+     * @param sdsIpList
+     * @param deviceInfoList
+     * @return
+     */
+    private HostToProtectionDomain createHostToProtectionDomain(String protectionDomain, String name, List<SdsIp> sdsIpList,
+            final List<DeviceInfo> deviceInfoList)
+    {
+        HostToProtectionDomain hostToProtectionDomain = new HostToProtectionDomain();
+        hostToProtectionDomain.setProtectionDomainId(protectionDomain);
+        hostToProtectionDomain.setName(name);
+        hostToProtectionDomain.setSdsIpList(sdsIpList);
+        hostToProtectionDomain.setDeviceInfoList(deviceInfoList);
+
+        return hostToProtectionDomain;
+    }
+
+    private List<DeviceInfo> createDeviceInfoList(Map<String, DeviceAssignment> deviceToDeviceStoragePoolAssignment)
+    {
+
+        List<DeviceInfo> returnVal = null;
+
+        if (deviceToDeviceStoragePoolAssignment != null)
+        {
+            //spaces are NOT allowed in the deviceName, so we will replace any spaces with '/'
+            // '/' is a valid character for deviceName
+            //the deviceName tends to look like "/dev/sda scsi" so it will change to "/dev/sda/scsi"
+            returnVal = deviceToDeviceStoragePoolAssignment.values().stream().filter(Objects::nonNull)
+                    .map(ddspa -> new DeviceInfo(ddspa.getLogicalName(), ddspa.getStoragePoolId(), null)).collect(Collectors.toList());
+        }
+        return returnVal;
+    }
 
     @Override
     public void delegateExecute(final DelegateExecution delegateExecution)
     {
-//        LOGGER.info("Execute AddVCenterHostToProtectionDomain task");
-//        final String taskMessage = "Add Host To Protection Domain";
-//        final NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
-//
-//        AddHostToProtectionDomainRequestMessage requestMessage = new AddHostToProtectionDomainRequestMessage();
-//
-//        /**
-//         * Getting the protection domain id from FindProtectionDomainTaskHandler
-//         */
-//
-//        final String protectionDomainId = nodeDetail.getProtectionDomainId();
-//
-//        final Map<String, DeviceAssignment> deviceToDeviceStoragePoolAssignment = nodeDetail.getDeviceToDeviceStoragePool();
-//
-//        /**
-//         * Getting the SdsName
-//         */
-//        String name = getSdsName(nodeDetail);
-//
-//        /**
-//         * Getting the sdsList
-//         */
-//        List<SdsIp> sdsIpList = createSdsIps(nodeDetail);
-//
-//        List<DeviceInfo> deviceInfoList = createDeviceInfoList(deviceToDeviceStoragePoolAssignment);
-//
-//        final com.dell.cpsd.paqx.dne.service.model.ComponentEndpointIds componentEndpointIds = repository
-//                .getComponentEndpointIds("SCALEIO-CLUSTER");
-//
-//        /**
-//         * Adding component endpoint ids
-//         */
-//        com.dell.cpsd.storage.capabilities.api.ComponentEndpointIds componentEndpoints = new com.dell.cpsd.storage.capabilities.api.ComponentEndpointIds();
-//        componentEndpoints.setEndpointUuid(componentEndpointIds.getEndpointUuid());
-//        componentEndpoints.setComponentUuid(componentEndpointIds.getComponentUuid());
-//        componentEndpoints.setCredentialUuid(componentEndpointIds.getCredentialUuid());
-//
-//        HostToProtectionDomain hostToProtectionDomain = createHostToProtectionDomain(protectionDomainId, name, sdsIpList, deviceInfoList);
-//
-//        /**
-//         * Adding the endpoint url
-//         */
-//        String endpointUrl = ("https://" + componentEndpointIds.getEndpointUrl() + ":443");
-//        requestMessage.setHostToProtectionDomain(hostToProtectionDomain);
-//        requestMessage.setComponentEndpointIds(componentEndpoints);
-//        requestMessage.setEndpointUrl(endpointUrl);
-//
-//        try
-//        {
-//            this.nodeService.requestAddHostToProtectionDomain(requestMessage);
-//
-//            final String returnMessage = taskMessage + " on Node " + nodeDetail.getServiceTag() + " was successful.";
-//            LOGGER.info(returnMessage);
-//            updateDelegateStatus(returnMessage);
-//        }
-//        catch (TaskResponseFailureException ex)
-//        {
-//            updateDelegateStatus(ex.getMessage());
-//            throw new BpmnError(ADD_VCENTER_HOST_TO_PROTECTION_DOMAIN, "Exception Code: " + ex.getCode() + "::" + ex.getMessage());
-//        }
-//        catch (Exception e)
-//        {
-//            String errorMessage = "An Unexpected Exception occurred attempting to request " + taskMessage + ".  Reason: ";
-//            LOGGER.error(errorMessage, e);
-//            updateDelegateStatus(errorMessage + e.getMessage());
-//            throw new BpmnError(ADD_VCENTER_HOST_TO_PROTECTION_DOMAIN, errorMessage + e.getMessage());
-//        }
+        LOGGER.info("Execute AddVCenterHostToProtectionDomain task");
+        final String taskMessage = "Add Host To Protection Domain";
+        final NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
+
+        AddHostToProtectionDomainRequestMessage requestMessage = new AddHostToProtectionDomainRequestMessage();
+
+        final String protectionDomainId = nodeDetail.getProtectionDomainId();
+
+        final Map<String, DeviceAssignment> deviceToDeviceStoragePoolAssignment = nodeDetail.getDeviceToDeviceStoragePool();
+
+        String name = getSdsName(nodeDetail);
+
+        List<SdsIp> sdsIpList = createSdsIps(nodeDetail);
+
+        List<DeviceInfo> deviceInfoList = createDeviceInfoList(deviceToDeviceStoragePoolAssignment);
+
+        final com.dell.cpsd.paqx.dne.service.model.ComponentEndpointIds componentEndpointIds = repository
+                .getComponentEndpointIds("SCALEIO-CLUSTER");
+
+        com.dell.cpsd.storage.capabilities.api.ComponentEndpointIds componentEndpoints = new com.dell.cpsd.storage.capabilities.api.ComponentEndpointIds();
+        componentEndpoints.setEndpointUuid(componentEndpointIds.getEndpointUuid());
+        componentEndpoints.setComponentUuid(componentEndpointIds.getComponentUuid());
+        componentEndpoints.setCredentialUuid(componentEndpointIds.getCredentialUuid());
+
+        HostToProtectionDomain hostToProtectionDomain = createHostToProtectionDomain(protectionDomainId, name, sdsIpList, deviceInfoList);
+
+        String endpointUrl = ("https://" + componentEndpointIds.getEndpointUrl() + ":443");
+        requestMessage.setHostToProtectionDomain(hostToProtectionDomain);
+        requestMessage.setComponentEndpointIds(componentEndpoints);
+        requestMessage.setEndpointUrl(endpointUrl);
+
+        try
+        {
+            this.nodeService.requestAddHostToProtectionDomain(requestMessage);
+
+            final String returnMessage = taskMessage + " on Node " + nodeDetail.getServiceTag() + " was successful.";
+            LOGGER.info(returnMessage);
+            updateDelegateStatus(returnMessage);
+        }
+        catch (TaskResponseFailureException ex)
+        {
+            updateDelegateStatus(ex.getMessage());
+            throw new BpmnError(ADD_VCENTER_HOST_TO_PROTECTION_DOMAIN, "Exception Code: " + ex.getCode() + "::" + ex.getMessage());
+        }
+        catch (Exception e)
+        {
+            String errorMessage = "An Unexpected Exception occurred attempting to request " + taskMessage + ".  Reason: ";
+            LOGGER.error(errorMessage, e);
+            updateDelegateStatus(errorMessage + e.getMessage());
+            throw new BpmnError(ADD_VCENTER_HOST_TO_PROTECTION_DOMAIN, errorMessage + e.getMessage());
+        }
     }
 }
