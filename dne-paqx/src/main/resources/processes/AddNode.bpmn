@@ -282,7 +282,7 @@
       </bpmn:sendTask>
       <bpmn:sequenceFlow id="SequenceFlow_0wn7y1z" sourceRef="StartEvent_0xwdsr0" targetRef="sendRebootHostRequest" />
       <bpmn:sequenceFlow id="SequenceFlow_0npgdc6" sourceRef="sendRebootHostRequest" targetRef="receiveRebootHostResponse" />
-      <bpmn:receiveTask id="receiveRebootHostResponse" name="Receive reboot host response" messageRef="Message_0jqvpn1">
+      <bpmn:receiveTask id="receiveRebootHostResponse" name="Receive reboot host response" messageRef="rebootHostResponseReceived">
         <bpmn:incoming>SequenceFlow_0npgdc6</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_0lk7zoc</bpmn:outgoing>
       </bpmn:receiveTask>
@@ -327,7 +327,7 @@
   <bpmn:message id="Message_0b6kkin" name="installEsxiResponseReceived" />
   <bpmn:error id="Error_18fw8dx" name="Install Esxi Error" errorCode="Install-Esxi-Failed" />
   <bpmn:error id="Error_0gd5he3" name="Error in Node Provisioning" errorCode="1" />
-  <bpmn:message id="Message_0jqvpn1" name="rebootHostResponseReceived" />
+  <bpmn:message id="rebootHostResponseReceived" name="rebootHostResponseReceived" />
   <bpmn:error id="Error_0hia0gj" name="RebootHostError" errorCode="Reboot-host-failed" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="addNode">
