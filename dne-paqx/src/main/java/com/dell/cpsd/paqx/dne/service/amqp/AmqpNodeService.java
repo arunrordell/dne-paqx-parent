@@ -328,7 +328,6 @@ public class AmqpNodeService extends AbstractServiceClient implements NodeServic
         this.consumer.addAdapter(new AddHostToDvSwitchResponseAdapter(this));
         this.consumer.addAdapter(new DeployScaleIoVmResponseAdapter(this));
         this.consumer.addAdapter(new EnablePciPassthroughResponseAdapter(this));
-        this.consumer.addAdapter(new RebootHostResponseAdapter(this));
         this.consumer.addAdapter(new SetPciPassthroughResponseAdapter(this));
         this.consumer.addAdapter(new ApplyEsxiLicenseResponseAdapter(this));
         this.consumer.addAdapter(new ListESXiCredentialDetailsResponseAdapter(this));

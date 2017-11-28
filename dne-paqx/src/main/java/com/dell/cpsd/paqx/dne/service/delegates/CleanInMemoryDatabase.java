@@ -51,10 +51,6 @@ public class CleanInMemoryDatabase extends BaseWorkflowDelegate
     public void delegateExecute(final DelegateExecution delegateExecution)
     {
         LOGGER.info("Cleaning in memory database ...");
-        String taskMessage = "Cleaning in memory db";
-
-        final NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
-
         boolean result;
         try
         {
@@ -62,20 +58,20 @@ public class CleanInMemoryDatabase extends BaseWorkflowDelegate
         }
         catch (Exception ex)
         {
-            String errorMessage = "Error cleaning in memory database: ";
+            String errorMessage = "An Unexpected Error occurred while cleaning up the Database. Reason: ";
             LOGGER.error(errorMessage, ex);
             updateDelegateStatus(errorMessage + ex.getMessage());
             throw new BpmnError(CLEAN_IN_MEMORY_DATABASE_ERROR, errorMessage + ex.getMessage());
         }
 
         if(!result) {
-            String errorMessage = "Error cleaning in memory database.";
+            String errorMessage = "Cleaning up the Database failed.";
             LOGGER.error(errorMessage);
             updateDelegateStatus(errorMessage);
             throw new BpmnError(CLEAN_IN_MEMORY_DATABASE_ERROR, errorMessage);
         }
 
-        String returnMessage = taskMessage + " on Node " + nodeDetail.getServiceTag() + " was successful.";
+        String returnMessage = "Cleaning up the Database was successful.";
         LOGGER.info(returnMessage);
         updateDelegateStatus(returnMessage);
     }

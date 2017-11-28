@@ -4,6 +4,8 @@
 # Dell EMC Confidential/Proprietary Information.
 #
 
+set -o errexit
+
 # Script creates rpm for docker containers
 
 set -x
@@ -22,6 +24,7 @@ PKG_NAME=dell-cpsd-dne-$DOCKER_IMAGE_NAME
 
 
 SPEC_PATH=$(dirname $(realpath $0))
+LOCAL_WORKSPACE=$(realpath "$SPEC_PATH/../target")
 SPEC_FILE=$(echo $SPEC_PATH/*.spec | head -n1)
 VERSION_PATH=$SPEC_PATH
 while [[ ! -e "$VERSION_PATH/.version" && "$VERSION_PATH" != "/" ]]

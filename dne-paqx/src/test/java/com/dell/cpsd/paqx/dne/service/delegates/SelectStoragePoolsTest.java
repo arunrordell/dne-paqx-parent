@@ -10,14 +10,12 @@ import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOProtectionDomain;
 import com.dell.cpsd.paqx.dne.exception.TaskResponseFailureException;
 import com.dell.cpsd.paqx.dne.service.NodeService;
 import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
-import com.dell.cpsd.paqx.dne.service.model.ComponentEndpointIds;
 import com.dell.cpsd.service.common.client.exception.ServiceExecutionException;
 import com.dell.cpsd.service.common.client.exception.ServiceTimeoutException;
 import com.dell.cpsd.service.engineering.standards.Device;
 import com.dell.cpsd.service.engineering.standards.DeviceAssignment;
 import com.dell.cpsd.service.engineering.standards.Error;
 import com.dell.cpsd.service.engineering.standards.EssValidateStoragePoolResponseMessage;
-import com.dell.cpsd.storage.capabilities.api.CreateStoragePoolRequestMessage;
 import org.camunda.bpm.engine.delegate.BpmnError;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.Before;
@@ -31,9 +29,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 
@@ -87,38 +87,21 @@ public class SelectStoragePoolsTest
     public void testNoValidStoragePoolsInitially() throws ServiceTimeoutException, ServiceExecutionException, TaskResponseFailureException
     {
         mockPopulatedNewDevices();
-        setupInvalidStoragePoolFollowedByValidStoragePoolMock();
-        mockEndpoints();
-        mockValidStoragePoolCreation();
+        setupInvalidStoragePoolMock();
 
         selectStoragePools.delegateExecute(delegateExecution);
         Map<String, DeviceAssignment> deviceAssignment = nodeDetail.getDeviceToDeviceStoragePool();
         assertFalse(deviceAssignment.isEmpty());
+        deviceAssignment.values().stream().filter(Objects::nonNull)
+                .forEach(da -> assertTrue(da.getStoragePoolId() == null && da.getStoragePoolName().equals("temp")));
     }
 
-    private void mockValidStoragePoolCreation() throws TaskResponseFailureException
-    {
-        doReturn("SPID1").when(nodeService).createStoragePool(Mockito.any(CreateStoragePoolRequestMessage.class));
-    }
-
-    private void mockEndpoints()
-    {
-        ComponentEndpointIds endpointIds = new ComponentEndpointIds("componentUuid", "endpointUuid", "endpointUrl", "credentialUuid");
-        doReturn(endpointIds).when(nodeService).getComponentEndpointIds(Mockito.anyString());
-    }
-
-    private void setupInvalidStoragePoolFollowedByValidStoragePoolMock() throws ServiceTimeoutException, ServiceExecutionException
+    private void setupInvalidStoragePoolMock() throws ServiceTimeoutException, ServiceExecutionException
     {
         EssValidateStoragePoolResponseMessage invalidStoragePoolResponse = setupInvalidStoragePoolResponse();
-        EssValidateStoragePoolResponseMessage validStoragePoolResponse = setupValidStoragePoolResponse();
 
-        doReturn(invalidStoragePoolResponse).doReturn(validStoragePoolResponse).when(nodeService)
+        doReturn(invalidStoragePoolResponse).when(nodeService)
                 .validateStoragePools(Mockito.anyList(), Mockito.anyList(), Mockito.anyMap());
-    }
-
-    private EssValidateStoragePoolResponseMessage setupValidStoragePoolResponse()
-    {
-        return createValidStoragePoolResponse();
     }
 
     private EssValidateStoragePoolResponseMessage setupInvalidStoragePoolResponse()

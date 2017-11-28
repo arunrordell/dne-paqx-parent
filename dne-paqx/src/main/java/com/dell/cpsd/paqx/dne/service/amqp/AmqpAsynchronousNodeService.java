@@ -14,11 +14,13 @@ import com.dell.cpsd.common.logging.ILogger;
 import com.dell.cpsd.paqx.dne.amqp.callback.AsynchronousNodeServiceCallback;
 import com.dell.cpsd.paqx.dne.amqp.config.AsynchronousNodeServiceConfig;
 import com.dell.cpsd.paqx.dne.amqp.producer.DneProducer;
+import com.dell.cpsd.paqx.dne.exception.TaskResponseFailureException;
 import com.dell.cpsd.paqx.dne.log.DneLoggingManager;
 import com.dell.cpsd.paqx.dne.repository.DataServiceRepository;
 import com.dell.cpsd.paqx.dne.service.AsynchronousNodeService;
 import com.dell.cpsd.paqx.dne.service.amqp.adapter.ConfigureBootDeviceIdracResponseAdapter;
 import com.dell.cpsd.paqx.dne.service.amqp.adapter.InstallEsxiResponseAdapter;
+import com.dell.cpsd.paqx.dne.service.amqp.adapter.RebootHostResponseAdapter;
 import com.dell.cpsd.paqx.dne.service.model.BootDeviceIdracStatus;
 import com.dell.cpsd.paqx.dne.service.model.ConfigureBootDeviceIdracRequest;
 import com.dell.cpsd.service.common.client.callback.IServiceCallback;
@@ -31,6 +33,8 @@ import com.dell.cpsd.service.common.client.rpc.DelegatingMessageConsumer;
 import com.dell.cpsd.service.common.client.rpc.ServiceCallbackRegistry;
 import com.dell.cpsd.service.common.client.rpc.ServiceRequestCallback;
 import com.dell.cpsd.service.common.client.task.ServiceTask;
+import com.dell.cpsd.virtualization.capabilities.api.HostPowerOperationRequestMessage;
+import com.dell.cpsd.virtualization.capabilities.api.HostPowerOperationResponseMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.util.CollectionUtils;
@@ -40,6 +44,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static com.dell.cpsd.paqx.dne.exception.TaskResponseExceptionCode.REBOOT_HOST;
 
 public class AmqpAsynchronousNodeService extends AbstractServiceCallbackManager implements ServiceCallbackRegistry,
         AsynchronousNodeService
@@ -108,6 +114,7 @@ public class AmqpAsynchronousNodeService extends AbstractServiceCallbackManager 
     {
         this.consumer.addAdapter(new ConfigureBootDeviceIdracResponseAdapter(this, this.runtimeService));
         this.consumer.addAdapter(new InstallEsxiResponseAdapter(this, this.runtimeService));
+        this.consumer.addAdapter(new RebootHostResponseAdapter(this, this.runtimeService));
     }
 
     /**
@@ -347,5 +354,71 @@ public class AmqpAsynchronousNodeService extends AbstractServiceCallbackManager 
             }
         }
         return status;
+    }
+
+    @Override
+    public AsynchronousNodeServiceCallback<?> sendRebootHostRequest(final String processId, final String activityId, final String messageId,
+            final HostPowerOperationRequestMessage requestMessage)
+    {
+        AsynchronousNodeServiceCallback<?> response = null;
+
+        try
+        {
+            final String correlationId = UUID.randomUUID().toString();
+            requestMessage.setMessageProperties(
+                    new com.dell.cpsd.virtualization.capabilities.api.MessageProperties(new Date(), correlationId, replyTo));
+            response = processRequest(processId, activityId, messageId, 0L, new ServiceRequestCallback()
+            {
+                @Override
+                public String getRequestId()
+                {
+                    return correlationId;
+                }
+
+                @Override
+                public void executeRequest(String requestId) throws Exception
+                {
+                    producer.publishRebootHost(requestMessage);
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            LOGGER.error(" An unexpected exception occurred while requesting reboot host", e);
+        }
+        return response;
+    }
+
+    @Override
+    public void processRebootHostResponse(final AsynchronousNodeServiceCallback<?> serviceCallback) throws TaskResponseFailureException
+    {
+        try
+        {
+            if (serviceCallback == null)
+            {
+                final String error = "Service callback is null";
+                LOGGER.error(error);
+                throw new TaskResponseFailureException(REBOOT_HOST.getCode(), error);
+            }
+
+            final HostPowerOperationResponseMessage responseMessage = processResponse(serviceCallback, HostPowerOperationResponseMessage.class);
+            if (responseMessage == null)
+            {
+                final String error = "Response message is null";
+                LOGGER.error(error);
+                throw new TaskResponseFailureException(REBOOT_HOST.getCode(), error);
+            }
+
+            if (responseMessage.getStatus().equals(HostPowerOperationResponseMessage.Status.FAILED))
+            {
+                LOGGER.error(responseMessage.getDescription());
+                throw new TaskResponseFailureException(REBOOT_HOST.getCode(), responseMessage.getDescription());
+            }
+        }
+        catch (ServiceExecutionException e)
+        {
+            LOGGER.error("Exception occurred", e);
+            throw new TaskResponseFailureException(REBOOT_HOST.getCode(), e.getMessage());
+        }
     }
 }

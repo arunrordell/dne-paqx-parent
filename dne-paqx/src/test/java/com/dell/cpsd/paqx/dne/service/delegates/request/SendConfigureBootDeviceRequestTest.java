@@ -2,6 +2,7 @@
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries.  All Rights Reserved.
  * Dell EMC Confidential/Proprietary Information
  */
+
 package com.dell.cpsd.paqx.dne.service.delegates.request;
 
 import com.dell.cpsd.paqx.dne.amqp.callback.AsynchronousNodeServiceCallback;
@@ -13,22 +14,25 @@ import org.camunda.bpm.engine.delegate.BpmnError;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class SendConfigureBootDeviceRequestTest
 {
-    private SendConfigureBootDeviceRequest sendConfigureBootDeviceRequest;
-    private AsynchronousNodeService asynchronousNodeService;
-    private DelegateExecution delegateExecution;
-    private NodeDetail nodeDetail;
+    private SendConfigureBootDeviceRequest                      sendConfigureBootDeviceRequest;
+    private AsynchronousNodeService                             asynchronousNodeService;
+    private DelegateExecution                                   delegateExecution;
+    private NodeDetail                                          nodeDetail;
     private AsynchronousNodeServiceCallback<ServiceResponse<?>> asynchronousNodeServiceCallback;
 
     @Before
@@ -57,8 +61,13 @@ public class SendConfigureBootDeviceRequestTest
     @Test
     public void delegateExecuteSuccess() throws Exception
     {
-        sendConfigureBootDeviceRequest.delegateExecute(delegateExecution);
-        verify(delegateExecution,times(1)).setVariable(DelegateConstants.CONFIGURE_BOOT_DEVICE_MESSAGE_ID, asynchronousNodeServiceCallback);
+        SendConfigureBootDeviceRequest sendConfigureBootDeviceRequestSpy = spy(sendConfigureBootDeviceRequest);
+
+        sendConfigureBootDeviceRequestSpy.delegateExecute(delegateExecution);
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(sendConfigureBootDeviceRequestSpy).updateDelegateStatus(captor.capture());
+        assertThat(captor.getValue(), containsString("was successful"));
     }
 
     @Test
@@ -66,10 +75,13 @@ public class SendConfigureBootDeviceRequestTest
     {
 
         doReturn(null).when(asynchronousNodeService).bootDeviceIdracStatusRequest(any(), any(), any(), any());
-        try{
+        try
+        {
             sendConfigureBootDeviceRequest.delegateExecute(delegateExecution);
             fail("An exception was expected.");
-        } catch (BpmnError error) {
+        }
+        catch (BpmnError error)
+        {
             assertTrue(error.getErrorCode().equals(DelegateConstants.SEND_CONFIGURE_BOOT_DEVICE_FAILED));
             assertTrue(error.getMessage().equals("Failed to send the request for to Configure Boot Device on Node abc"));
         }

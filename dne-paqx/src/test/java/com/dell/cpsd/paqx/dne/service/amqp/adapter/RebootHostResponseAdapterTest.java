@@ -1,6 +1,5 @@
 /**
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries.  All Rights Reserved. Dell EMC Confidential/Proprietary Information
- *
  */
 
 package com.dell.cpsd.paqx.dne.service.amqp.adapter;
@@ -22,12 +21,12 @@ import static org.mockito.Mockito.spy;
  *
  * @since 1.0
  */
-public class RebootHostResponseAdapterTest extends BaseResponseAdapterTest<HostPowerOperationResponseMessage>
+public class RebootHostResponseAdapterTest extends BaseAsynchronousResponseAdapterTest<HostPowerOperationResponseMessage>
 {
     @Override
     protected ServiceCallbackAdapter<HostPowerOperationResponseMessage, ServiceResponse<HostPowerOperationResponseMessage>> createTestable()
     {
-        return new RebootHostResponseAdapter(this.registry);
+        return new RebootHostResponseAdapter(this.registry, this.runtimeService);
     }
 
     @Override

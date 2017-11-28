@@ -2,6 +2,7 @@
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries.  All Rights Reserved.
  * Dell EMC Confidential/Proprietary Information
  */
+
 package com.dell.cpsd.paqx.dne.service.delegates;
 
 import com.dell.cpsd.paqx.dne.amqp.callback.AsynchronousNodeServiceCallback;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.verify;
 public class InstallEsxiTest
 {
     private InstallEsxi installEsxi;
-    private NodeDetail nodeDetail;
+    private NodeDetail  nodeDetail;
 
     @Mock
     private AsynchronousNodeService asynchronousNodeService;
@@ -46,7 +47,8 @@ public class InstallEsxiTest
     private AsynchronousNodeServiceCallback<?> asynchronousNodeServiceCallback;
 
     @Before
-    public void setUp() {
+    public void setUp()
+    {
         installEsxi = new InstallEsxi(asynchronousNodeService, repository);
 
         doReturn(true).when(asynchronousNodeServiceCallback).isDone();
@@ -66,29 +68,38 @@ public class InstallEsxiTest
     }
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccess() throws Exception
+    {
         doReturn("succeeded").when(asynchronousNodeService).requestInstallEsxi(asynchronousNodeServiceCallback);
         installEsxi.delegateExecute(delegateExecution);
         verify(delegateExecution, times(1)).setVariable(HOSTNAME, "hostName.domain");
     }
 
     @Test
-    public void testException() throws Exception {
+    public void testException() throws Exception
+    {
         doThrow(new ServiceExecutionException("Error1")).when(asynchronousNodeService).requestInstallEsxi(asynchronousNodeServiceCallback);
-        try {
+        try
+        {
             installEsxi.delegateExecute(delegateExecution);
-        } catch (BpmnError error) {
+        }
+        catch (BpmnError error)
+        {
             assertTrue(error.getErrorCode().equals(DelegateConstants.INSTALL_ESXI_FAILED));
             assertTrue((error.getMessage().equals("Install Esxi on Node " + nodeDetail.getServiceTag() + " failed!  Reason: Error1")));
         }
     }
 
     @Test
-    public void testFailed() throws Exception {
+    public void testFailed() throws Exception
+    {
         doReturn("failed").when(asynchronousNodeService).requestInstallEsxi(asynchronousNodeServiceCallback);
-        try {
+        try
+        {
             installEsxi.delegateExecute(delegateExecution);
-        } catch (BpmnError error) {
+        }
+        catch (BpmnError error)
+        {
             assertTrue(error.getErrorCode().equals(DelegateConstants.INSTALL_ESXI_FAILED));
             assertTrue((error.getMessage().equals("Install Esxi on Node abc failed!")));
         }

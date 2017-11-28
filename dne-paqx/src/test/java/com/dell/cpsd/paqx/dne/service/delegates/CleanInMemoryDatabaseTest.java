@@ -29,7 +29,6 @@ public class CleanInMemoryDatabaseTest
     private CleanInMemoryDatabase cleanInMemoryDatabase;
     private DelegateExecution     delegateExecution;
     private DataServiceRepository repository;
-    private NodeDetail            nodeDetail;
 
     @Before
     public void setUp() throws Exception
@@ -37,8 +36,6 @@ public class CleanInMemoryDatabaseTest
         repository = mock(DataServiceRepository.class);
         cleanInMemoryDatabase = new CleanInMemoryDatabase(repository);
         delegateExecution = mock(DelegateExecution.class);
-        nodeDetail = new NodeDetail();
-        nodeDetail.setServiceTag("abc");
     }
 
     @Test
@@ -46,14 +43,13 @@ public class CleanInMemoryDatabaseTest
     {
         try
         {
-            when(delegateExecution.getVariable(NODE_DETAIL)).thenReturn(nodeDetail);
-            given(repository.cleanInMemoryDatabase()).willThrow(new NullPointerException());
+            given(repository.cleanInMemoryDatabase()).willThrow(new NullPointerException("Test Exception"));
             cleanInMemoryDatabase.delegateExecute(delegateExecution);
         }
         catch (BpmnError error)
         {
             assertTrue(error.getErrorCode().equals(DelegateConstants.CLEAN_IN_MEMORY_DATABASE_ERROR));
-            assertTrue(error.getMessage().contains("Error cleaning in memory database:"));
+            assertTrue(error.getMessage().contains("An Unexpected Error occurred while cleaning up the Database. Reason: Test Exception"));
         }
     }
 
@@ -62,25 +58,23 @@ public class CleanInMemoryDatabaseTest
     {
         try
         {
-            when(delegateExecution.getVariable(NODE_DETAIL)).thenReturn(nodeDetail);
             when(repository.cleanInMemoryDatabase()).thenReturn(false);
             cleanInMemoryDatabase.delegateExecute(delegateExecution);
         }
         catch (BpmnError error)
         {
             assertTrue(error.getErrorCode().equals(DelegateConstants.CLEAN_IN_MEMORY_DATABASE_ERROR));
-            assertTrue(error.getMessage().contains("Error cleaning in memory database."));
+            assertTrue(error.getMessage().contains("Cleaning up the Database failed."));
         }
     }
 
     @Test
     public void testSuccess()
     {
-        when(delegateExecution.getVariable(NODE_DETAIL)).thenReturn(nodeDetail);
         when(repository.cleanInMemoryDatabase()).thenReturn(true);
         final CleanInMemoryDatabase cleanInMemoryDatabaseSpy = spy(cleanInMemoryDatabase);
         cleanInMemoryDatabaseSpy.delegateExecute(delegateExecution);
-        verify(cleanInMemoryDatabaseSpy).updateDelegateStatus("Cleaning in memory db on Node abc was successful.");
+        verify(cleanInMemoryDatabaseSpy).updateDelegateStatus("Cleaning up the Database was successful.");
 
     }
 }

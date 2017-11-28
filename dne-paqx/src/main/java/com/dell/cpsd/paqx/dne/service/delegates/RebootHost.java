@@ -6,22 +6,21 @@
 
 package com.dell.cpsd.paqx.dne.service.delegates;
 
+import com.dell.cpsd.paqx.dne.amqp.callback.AsynchronousNodeServiceCallback;
 import com.dell.cpsd.paqx.dne.exception.TaskResponseFailureException;
-import com.dell.cpsd.paqx.dne.service.NodeService;
-import com.dell.cpsd.paqx.dne.service.delegates.model.DelegateRequestModel;
-import com.dell.cpsd.paqx.dne.transformers.HostPowerOperationsTransformer;
-import com.dell.cpsd.virtualization.capabilities.api.HostPowerOperationRequestMessage;
-import com.dell.cpsd.virtualization.capabilities.api.PowerOperationRequest;
+import com.dell.cpsd.paqx.dne.service.AsynchronousNodeService;
+import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
 import org.camunda.bpm.engine.delegate.BpmnError;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.REBOOT_HOST_FAILED;
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.REBOOT_HOST_MESSAGE_ID;
 
 @Component
 @Scope("prototype")
@@ -36,14 +35,11 @@ public class RebootHost extends BaseWorkflowDelegate
     /**
      * The <code>NodeService</code> instance
      */
-    private final NodeService                    nodeService;
-    private final HostPowerOperationsTransformer hostPowerOperationsRequestTransformer;
+    private final AsynchronousNodeService asynchronousNodeService;
 
-    @Autowired
-    public RebootHost(final NodeService nodeService, final HostPowerOperationsTransformer hostPowerOperationsRequestTransformer)
+    public RebootHost(final AsynchronousNodeService asynchronousNodeService)
     {
-        this.nodeService = nodeService;
-        this.hostPowerOperationsRequestTransformer = hostPowerOperationsRequestTransformer;
+        this.asynchronousNodeService = asynchronousNodeService;
     }
 
     @Override
@@ -54,11 +50,12 @@ public class RebootHost extends BaseWorkflowDelegate
 
         try
         {
-            final DelegateRequestModel<HostPowerOperationRequestMessage> delegateRequestModel = hostPowerOperationsRequestTransformer
-                    .buildHostPowerOperationsRequestMessage(delegateExecution, PowerOperationRequest.PowerOperation.REBOOT);
-            this.nodeService.requestHostReboot(delegateRequestModel.getRequestMessage());
+            final NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
+            final AsynchronousNodeServiceCallback<?> responseCallback = (AsynchronousNodeServiceCallback<?>) delegateExecution
+                    .getVariable(REBOOT_HOST_MESSAGE_ID);
+            this.asynchronousNodeService.processRebootHostResponse(responseCallback);
 
-            final String returnMessage = taskMessage + " on Node " + delegateRequestModel.getServiceTag() + " was successful.";
+            final String returnMessage = taskMessage + " on Node " + nodeDetail.getServiceTag() + " was successful.";
             LOGGER.info(returnMessage);
             updateDelegateStatus(returnMessage);
         }

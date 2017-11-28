@@ -56,6 +56,7 @@ public class InstallEsxiResponseAdapter
                         async.getProcessInstanceId()).activityId(async.getActivityId()).singleResult();
                 if (execution != null)
                 {
+                    runtimeService.setVariable(execution.getId(), async.getMessageId(), callback);
                     runtimeService.messageEventReceived(async.getMessageId(), execution.getId());
                 }
             }

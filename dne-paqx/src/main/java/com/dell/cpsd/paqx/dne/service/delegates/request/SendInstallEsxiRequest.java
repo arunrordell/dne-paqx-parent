@@ -69,7 +69,7 @@ public class SendInstallEsxiRequest extends BaseWorkflowDelegate
     {
 
         LOGGER.info("Execute Send Install ESXi Request");
-        final String taskMessage = "The Request for Boot Device Configuration";
+        final String taskMessage = "The Request to Send Install ESXi";
         NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
 
         final String symphonyUuid = nodeDetail.getId();
@@ -121,14 +121,13 @@ public class SendInstallEsxiRequest extends BaseWorkflowDelegate
 
         if (requestCallback != null)
         {
-            delegateExecution.setVariable(INSTALL_ESXI_MESSAGE_ID, requestCallback);
-            final String message = taskMessage + " was successful on Node " + nodeDetail.getServiceTag();
+            final String message = taskMessage + " on Node " + nodeDetail.getServiceTag() + " was successful";
             LOGGER.info(message);
             updateDelegateStatus(message);
         }
         else
         {
-            final String message = "Failed to send the request for Configure Boot Device on Node " + nodeDetail.getServiceTag();
+            final String message = "Failed to send the request for Install ESXi on Node " + nodeDetail.getServiceTag();
             LOGGER.error(message);
             updateDelegateStatus(message);
             throw new BpmnError(SEND_INSTALL_ESXI_FAILED, message);

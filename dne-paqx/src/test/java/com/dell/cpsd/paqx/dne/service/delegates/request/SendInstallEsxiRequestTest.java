@@ -2,6 +2,7 @@
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries.  All Rights Reserved.
  * Dell EMC Confidential/Proprietary Information
  */
+
 package com.dell.cpsd.paqx.dne.service.delegates.request;
 
 import com.dell.cpsd.EsxiInstallationInfo;
@@ -16,15 +17,18 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -49,14 +53,12 @@ public class SendInstallEsxiRequestTest
 
     private NodeDetail nodeDetail;
 
-
     @Before
     public void setUp() throws Exception
     {
-        sendInstallEsxiRequest = new SendInstallEsxiRequest(asynchronousNodeService,
-                                                            hostToInstallEsxiRequestTransformer);
+        sendInstallEsxiRequest = new SendInstallEsxiRequest(asynchronousNodeService, hostToInstallEsxiRequestTransformer);
 
-        doReturn(this.esxiInstallationInfo).when(hostToInstallEsxiRequestTransformer).transformInstallEsxiData(any(),any(), any());
+        doReturn(this.esxiInstallationInfo).when(hostToInstallEsxiRequestTransformer).transformInstallEsxiData(any(), any(), any());
 
         doReturn(asynchronousNodeServiceCallback).when(asynchronousNodeService).requestInstallEsxi(any(), any(), any(), any());
 
@@ -75,8 +77,13 @@ public class SendInstallEsxiRequestTest
     @Test
     public void delegateExecuteSuccess() throws Exception
     {
-        sendInstallEsxiRequest.delegateExecute(delegateExecution);
-        verify(delegateExecution,times(1)).setVariable(DelegateConstants.INSTALL_ESXI_MESSAGE_ID, asynchronousNodeServiceCallback);
+        SendInstallEsxiRequest sendInstallEsxiRequestSpy = spy(sendInstallEsxiRequest);
+
+        sendInstallEsxiRequestSpy.delegateExecute(delegateExecution);
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(sendInstallEsxiRequestSpy).updateDelegateStatus(captor.capture());
+        assertThat(captor.getValue(), containsString("was successful"));
     }
 
     @Test
@@ -84,13 +91,15 @@ public class SendInstallEsxiRequestTest
     {
 
         doReturn(null).when(asynchronousNodeService).requestInstallEsxi(any(), any(), any(), any());
-        try{
+        try
+        {
             sendInstallEsxiRequest.delegateExecute(delegateExecution);
             fail("An exception was expected.");
-        } catch (BpmnError error) {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.SEND_INSTALL_ESXI_FAILED));
-            assertTrue(error.getMessage().equals("Failed to send the request for Configure Boot Device on Node abc"));
         }
-
+        catch (BpmnError error)
+        {
+            assertTrue(error.getErrorCode().equals(DelegateConstants.SEND_INSTALL_ESXI_FAILED));
+            assertThat(error.getMessage(), containsString("Failed to send the request"));
+        }
     }
 }

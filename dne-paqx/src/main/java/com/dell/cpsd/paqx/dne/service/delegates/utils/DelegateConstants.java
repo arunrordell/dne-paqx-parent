@@ -37,6 +37,7 @@ public class DelegateConstants
     //Message IDs
     public static final String CONFIGURE_BOOT_DEVICE_MESSAGE_ID = "configureBootDeviceResponseReceived";
     public static final String INSTALL_ESXI_MESSAGE_ID          = "installEsxiResponseReceived";
+    public static final String REBOOT_HOST_MESSAGE_ID           = "rebootHostResponseReceived";
 
     public static final String VCENTER_INFORMATION_NOT_FOUND            = "VCenter-Information-Missing";
     public static final String INVENTORY_VCENTER_FAILED                 = "Inventory-VCenter-Failed";

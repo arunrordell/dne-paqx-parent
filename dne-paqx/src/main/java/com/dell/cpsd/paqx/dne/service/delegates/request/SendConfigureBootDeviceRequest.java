@@ -66,7 +66,6 @@ public class SendConfigureBootDeviceRequest extends BaseWorkflowDelegate
                                                                                configureBootDeviceIdracRequest);
         if (requestCallback != null)
         {
-            delegateExecution.setVariable(CONFIGURE_BOOT_DEVICE_MESSAGE_ID, requestCallback);
             LOGGER.info(taskMessage + " was successful on Node " + nodeDetail.getServiceTag());
             updateDelegateStatus(taskMessage + " was successful on Node " + nodeDetail.getServiceTag());
         }

@@ -8,20 +8,15 @@ package com.dell.cpsd.paqx.dne.service.delegates;
 
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOData;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOProtectionDomain;
-import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOStoragePool;
 import com.dell.cpsd.paqx.dne.domain.vcenter.HostStorageDevice;
-import com.dell.cpsd.paqx.dne.exception.TaskResponseFailureException;
 import com.dell.cpsd.paqx.dne.service.NodeService;
 import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
-import com.dell.cpsd.paqx.dne.service.model.ComponentEndpointIds;
 import com.dell.cpsd.paqx.dne.util.NodeInventoryParsingUtil;
 import com.dell.cpsd.service.common.client.exception.ServiceExecutionException;
 import com.dell.cpsd.service.common.client.exception.ServiceTimeoutException;
 import com.dell.cpsd.service.engineering.standards.Device;
 import com.dell.cpsd.service.engineering.standards.DeviceAssignment;
 import com.dell.cpsd.service.engineering.standards.EssValidateStoragePoolResponseMessage;
-import com.dell.cpsd.storage.capabilities.api.CreateStoragePoolRequestMessage;
-import com.dell.cpsd.storage.capabilities.api.StoragePoolSpec;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.delegate.BpmnError;
@@ -149,13 +144,11 @@ public class SelectStoragePools extends BaseWorkflowDelegate
 
         if (!findValidStoragePool(deviceMap, newDevices, hostToStorageDeviceMap, scaleIOProtectionDomain))
         {
-            // Go through the scaleio adapter to create new storage pool
-            createValidStoragePool(scaleIOProtectionDomain);
-
-            if (!findValidStoragePool(deviceMap, newDevices, hostToStorageDeviceMap, scaleIOProtectionDomain))
-            {
-                throw new IllegalStateException("Unable to find or create a valid storage pool");
-            }
+            //If we do not find a storage pool, then for now we assume it's going to be a newly-created
+            //"temp" storage pool and the devices will be assigned to it.
+            newDevices.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(device->deviceMap.put(device.getId(), new DeviceAssignment(device.getId(), device.getSerialNumber(), device.getLogicalName(), device.getName(),null, "temp")));
         }
     }
 
@@ -192,60 +185,6 @@ public class SelectStoragePools extends BaseWorkflowDelegate
 
         storageResponseMessage.getErrors().forEach(f -> updateDelegateStatus(f.getMessage()));
         return false;
-    }
-
-    /**
-     * Cerates a valid storage pool through scaleio adapter and saves the same to H2 database
-     *
-     * @param scaleIOProtectionDomain Protection domain for which to create the storage pool
-     * @throws ServiceTimeoutException
-     * @throws ServiceExecutionException
-     */
-    private void createValidStoragePool(final ScaleIOProtectionDomain scaleIOProtectionDomain)
-            throws ServiceTimeoutException, ServiceExecutionException
-    {
-        final ComponentEndpointIds componentEndpointIds = nodeService.getComponentEndpointIds(COMPONENT_TYPE);
-
-        if (componentEndpointIds == null)
-        {
-            throw new IllegalStateException("No component ids found.");
-        }
-
-        CreateStoragePoolRequestMessage requestMessage = new CreateStoragePoolRequestMessage();
-        requestMessage.setEndpointUrl("https://" + componentEndpointIds.getEndpointUrl());
-        requestMessage.setComponentEndpointIds(
-                new com.dell.cpsd.storage.capabilities.api.ComponentEndpointIds(componentEndpointIds.getComponentUuid(),
-                        componentEndpointIds.getEndpointUuid(), componentEndpointIds.getCredentialUuid()));
-
-        StoragePoolSpec storagePoolSpec = new StoragePoolSpec();
-        storagePoolSpec.setProtectionDomainId(scaleIOProtectionDomain.getId());
-        storagePoolSpec.setRmCacheWriteHandlingMode(StoragePoolSpec.RmCacheWriteHandlingMode.PASSTHROUGH);
-        storagePoolSpec.setStoragePoolName(DEFAULT_STORAGE_POOL_NAME);
-        storagePoolSpec.setUseRmcache(false);
-        storagePoolSpec.setZeroPaddingEnabled(true);
-        requestMessage.setStoragePoolSpec(storagePoolSpec);
-
-        String newStoragePool = null;
-        try
-        {
-            newStoragePool = nodeService.createStoragePool(requestMessage);
-        }
-        catch (TaskResponseFailureException e)
-        {
-
-            LOGGER.error("Failed to create storage pool", e);
-            updateDelegateStatus("Failed to create storage pool: " + e.getMessage());
-        }
-        if (newStoragePool == null || newStoragePool.length() == 0)
-        {
-            throw new IllegalStateException("Create storage pool request failed");
-        }
-
-        // Sync up the same storage pool into H2 db
-        ScaleIOStoragePool newlyCreatedStoragePool = nodeService
-                .createStoragePool(DEFAULT_STORAGE_POOL_NAME, newStoragePool, scaleIOProtectionDomain.getId());
-        scaleIOProtectionDomain.addStoragePool(newlyCreatedStoragePool);
-
     }
 
     public List<Device> getNewDevices(String symphonyUuid)

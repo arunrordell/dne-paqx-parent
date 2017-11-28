@@ -5,9 +5,6 @@
  */
 package com.dell.cpsd.paqx.dne.service.delegates;
 
-import com.dell.cpsd.paqx.dne.service.NodeService;
-import com.dell.cpsd.service.common.client.exception.ServiceExecutionException;
-import com.dell.cpsd.service.common.client.exception.ServiceTimeoutException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,17 +33,23 @@ public abstract class BaseWorkflowDelegate implements JavaDelegate
         try
         {
             delegateExecute(delegateExecution);
-        } catch (Throwable t)
+        }
+        catch (BpmnError bpmnError)
+        {
+            throw bpmnError;
+        }
+        catch (Exception e)
+        {
+            final String errorMessage = "An Unexpected Exception occurred in the workflow.";
+            LOGGER.error("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            LOGGER.error(errorMessage, e);
+            LOGGER.error("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            throw e;
+        }
+        finally
         {
             postExecute(delegateExecution);
-            if(t instanceof BpmnError) {
-                throw t;
-            } else {
-                //TODO: what do we do with other types of errors?
-                LOGGER.error("%%%%%%%%%%%%%%%%%%%%%%%%%%% Exception caught:  but not handling condition! %%%%%%%");
-            }
         }
-        postExecute(delegateExecution);
     }
 
     public abstract void delegateExecute(DelegateExecution delegateExecution);

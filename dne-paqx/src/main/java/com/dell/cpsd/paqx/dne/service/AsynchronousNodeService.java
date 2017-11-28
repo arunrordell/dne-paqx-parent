@@ -7,10 +7,12 @@ package com.dell.cpsd.paqx.dne.service;
 
 import com.dell.cpsd.EsxiInstallationInfo;
 import com.dell.cpsd.paqx.dne.amqp.callback.AsynchronousNodeServiceCallback;
+import com.dell.cpsd.paqx.dne.exception.TaskResponseFailureException;
 import com.dell.cpsd.paqx.dne.service.model.BootDeviceIdracStatus;
 import com.dell.cpsd.paqx.dne.service.model.ConfigureBootDeviceIdracRequest;
 import com.dell.cpsd.service.common.client.callback.ServiceResponse;
 import com.dell.cpsd.service.common.client.exception.ServiceExecutionException;
+import com.dell.cpsd.virtualization.capabilities.api.HostPowerOperationRequestMessage;
 
 /**
  * Node service interface.
@@ -38,5 +40,10 @@ public interface AsynchronousNodeService
                                                                                          EsxiInstallationInfo esxiInstallationInfo);
 
     String requestInstallEsxi(AsynchronousNodeServiceCallback<?> serviceCallback) throws ServiceExecutionException;
+
+    AsynchronousNodeServiceCallback<?> sendRebootHostRequest(String processId, String activityId, String messageId,
+            HostPowerOperationRequestMessage requestMessage);
+
+    void processRebootHostResponse(AsynchronousNodeServiceCallback<?> serviceCallback) throws TaskResponseFailureException;
 
 }
