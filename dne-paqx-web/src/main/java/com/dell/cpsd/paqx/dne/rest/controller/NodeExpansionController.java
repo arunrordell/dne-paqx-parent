@@ -115,10 +115,11 @@ public class NodeExpansionController
     @ResponseStatus(HttpStatus.OK)
     public List<NodeInfo> listDiscoveredNodes(HttpServletRequest servletRequest) throws ServiceTimeoutException, ServiceExecutionException, JsonProcessingException {
         List<DiscoveredNodeInfo> discoveredNodes = nodeService.listDiscoveredNodeInfo();
-        if ( discoveredNodes.size()!= 0)
+        if (discoveredNodes.size() != 0)
         {
-            return discoveredNodes.stream().map( n -> new NodeInfo( n.getSymphonyUuid(), NodeStatus.valueOf(n.getNodeStatus().toString()),
-                    n.getSerialNumber())).collect(Collectors.toList());
+            return discoveredNodes.stream()
+                    .map(n -> new NodeInfo(n.getSymphonyUuid(), NodeStatus.valueOf(n.getNodeStatus().toString()), n.getModel(),
+                            n.getSerialNumber(), n.getVendor())).collect(Collectors.toList());
         }
 
         return new ArrayList<>();
@@ -139,8 +140,8 @@ public class NodeExpansionController
         DiscoveredNodeInfo discoveredNode = nodeService.getFirstDiscoveredNodeInfo();
         if (discoveredNode != null)
         {
-            return new NodeInfo(discoveredNode.getSymphonyUuid(), NodeStatus.valueOf(discoveredNode.getNodeStatus().toString()),
-                    discoveredNode.getSerialNumber());
+            return new NodeInfo(discoveredNode.getSymphonyUuid(), NodeStatus.valueOf(discoveredNode.getNodeStatus().toString()), discoveredNode.getModel(),
+                    discoveredNode.getSerialNumber(), discoveredNode.getVendor());
         }
         return null;
     }
