@@ -13,8 +13,8 @@ public class DiscoveredNodeInfoTest
     @Test
     public void testEquals()
     {
-        DiscoveredNodeInfo info1 = new DiscoveredNodeInfo("model1", "modelFamily1", "product1", "productFamily1", "serialNumber1", "uuid1");
-        DiscoveredNodeInfo info2 = new DiscoveredNodeInfo("model1", "modelFamily1", "product1", "productFamily1", "serialNumber1", "uuid1");
+        DiscoveredNodeInfo info1 = new DiscoveredNodeInfo("model1", "modelFamily1", "product1", "productFamily1", "serialNumber1", "uuid1","vendor");
+        DiscoveredNodeInfo info2 = new DiscoveredNodeInfo("model1", "modelFamily1", "product1", "productFamily1", "serialNumber1", "uuid1","vendor");
 
         assertTrue(info1.equals(info2));
 

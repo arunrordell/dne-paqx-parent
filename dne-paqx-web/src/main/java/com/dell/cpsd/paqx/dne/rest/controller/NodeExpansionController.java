@@ -118,7 +118,7 @@ public class NodeExpansionController
         if ( discoveredNodes.size()!= 0)
         {
             return discoveredNodes.stream().map( n -> new NodeInfo( n.getSymphonyUuid(), NodeStatus.valueOf(n.getNodeStatus().toString()),
-                    n.getSerialNumber())).collect(Collectors.toList());
+                    n.getSerialNumber(),n.getProduct(),n.getVendor())).collect(Collectors.toList());
         }
 
         return new ArrayList<>();
@@ -140,7 +140,7 @@ public class NodeExpansionController
         if ( discoveredNode != null )
         {
             return  new NodeInfo( discoveredNode.getSymphonyUuid(), NodeStatus.valueOf(discoveredNode.getNodeStatus().toString()),
-                    discoveredNode.getSerialNumber());
+                    discoveredNode.getSerialNumber(),discoveredNode.getProduct(),discoveredNode.getVendor());
         }
         return null;
     }

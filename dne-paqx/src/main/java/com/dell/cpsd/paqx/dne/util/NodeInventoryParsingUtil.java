@@ -32,6 +32,7 @@ public class NodeInventoryParsingUtil
     private static final String SMART_SOURCE       = "smart";
     private static final String SOLID_STATE_DEVICE = "Solid State Device";
     private static final String DEVICE_PATH_BY_ID  = "/dev/disk/by-id/wwn-";
+    private static final String VENDOR             = "Manufacturer";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeInventoryParsingUtil.class);
 
@@ -53,7 +54,8 @@ public class NodeInventoryParsingUtil
                 String serialNumber = (String) sysInfo.get(SERIAL_NUM_FIELD);
                 String product = (String) sysInfo.get(PRODUCT_FIELD);
                 String family = (String) sysInfo.get(FAMILY_FIELD);
-                return new DiscoveredNodeInfo(product, family, product, family, serialNumber, uuid);
+                String vendor = (String) sysInfo.get(VENDOR);
+                return new DiscoveredNodeInfo(product, family, product, family, serialNumber, uuid, vendor);
             }
         }
         return null;
