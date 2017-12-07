@@ -20,6 +20,7 @@ import com.dell.cpsd.service.engineering.standards.EssValidateProtectionDomainsR
 import com.dell.cpsd.service.engineering.standards.NodeData;
 import com.dell.cpsd.service.engineering.standards.ProtectionDomain;
 import com.dell.cpsd.service.engineering.standards.ScaleIODataServer;
+import com.dell.cpsd.service.engineering.standards.ValidProtectionDomain;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
 import org.camunda.bpm.engine.delegate.BpmnError;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAILS;
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.SELECT_PROTECTION_DOMAINS_FAILED;
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
 
@@ -75,30 +77,45 @@ public class SelectProtectionDomains extends BaseWorkflowDelegate
         LOGGER.info("Execute ProtectionDomain ");
         try
         {
-            final NodeData nodeData = new NodeData();
-            NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
-            final String uuid = nodeDetail.getId();
-            nodeData.setSymphonyUuid(uuid);
-            nodeData.setType(getNodeType(uuid));
 
-            updateDelegateStatus("Selecting Protection Domain for Node " + nodeDetail.getServiceTag());
+            List<NodeDetail> nodeDetails = (List<NodeDetail>) delegateExecution.getVariable(NODE_DETAILS);
+
+            List<NodeData> nodeDataList = new ArrayList<>();
+
+            for(NodeDetail nodeDetail : nodeDetails)
+            {
+                NodeData nodeData = new NodeData();
+                String uuid = nodeDetail.getId();
+                nodeData.setSymphonyUuid(uuid);
+                nodeData.setType(getNodeType(uuid));
+                nodeDataList.add(nodeData);
+            }
+
+            updateDelegateStatus("Selecting Protection Domain for Nodes");
+
             final List<ScaleIOData> scaleIODataList = nodeService.listScaleIOData();
 
             final ScaleIOData scaleIo = scaleIODataList.get(0);
 
             final List<ScaleIOProtectionDomain> protectionDomains = scaleIo.getProtectionDomains();
+
             final List<ProtectionDomain> protectionDomainList = new ArrayList<>();
 
             if (!org.springframework.util.CollectionUtils.isEmpty(protectionDomains))
             {
                 protectionDomains.stream().filter(Objects::nonNull).forEach(pd -> {
-                    addProtectionDomainRequestObjectToList(nodeData, nodeDetail, protectionDomainList, pd);
+                    for(NodeData nodeData : nodeDataList)
+                    {
+                       NodeDetail nodeDetail = nodeDetails.stream().filter(nodedetail -> nodedetail.getId() == nodeData.getSymphonyUuid()).findFirst().get();
+
+                        addProtectionDomainRequestObjectToList(nodeData, nodeDetail, protectionDomainList, pd);
+                    }
                 });
             }
 
             final EssValidateProtectionDomainsRequestMessage requestMessage = new EssValidateProtectionDomainsRequestMessage();
 
-            requestMessage.setNodeData(nodeData);
+            requestMessage.setNodeDatas(nodeDataList);
             requestMessage.setProtectionDomains(protectionDomainList);
 
             final EssValidateProtectionDomainsResponseMessage protectionDomainResponse = nodeService
@@ -106,8 +123,8 @@ public class SelectProtectionDomains extends BaseWorkflowDelegate
 
             if (!org.springframework.util.CollectionUtils.isEmpty(protectionDomainResponse.getValidProtectionDomains()))
             {
-                setResultsInFindProtectionDomainTaskResponse(nodeDetail, protectionDomainList, protectionDomainResponse);
-                updateDelegateStatus("Selecting Protection Domain for Node " + nodeDetail.getServiceTag());
+                setResultsInFindProtectionDomainTaskResponse(nodeDetails, protectionDomainResponse);
+                updateDelegateStatus("Selecting Protection Domain for Node ");
             }
             else
             {
@@ -117,7 +134,7 @@ public class SelectProtectionDomains extends BaseWorkflowDelegate
                 throw new BpmnError(SELECT_PROTECTION_DOMAINS_FAILED, error);
             }
 
-            delegateExecution.setVariable(NODE_DETAIL, nodeDetail);
+            delegateExecution.setVariable(NODE_DETAILS, nodeDetails);
         }
         catch (ServiceTimeoutException | ServiceExecutionException e)
         {
@@ -179,17 +196,37 @@ public class SelectProtectionDomains extends BaseWorkflowDelegate
         return scaleIODataServers;
     }
 
-    private void setResultsInFindProtectionDomainTaskResponse(final NodeDetail nodeDetail,
-            final List<ProtectionDomain> protectionDomainList, final EssValidateProtectionDomainsResponseMessage protectionDomainResponse)
+    private void setResultsInFindProtectionDomainTaskResponse(final List<NodeDetail> nodeDetails,
+            final EssValidateProtectionDomainsResponseMessage protectionDomainResponse)
     {
-        final String protectionDomainId = protectionDomainResponse.getValidProtectionDomains().get(0).getProtectionDomainID();
+        List<ValidProtectionDomain> validProtectionDomainList = protectionDomainResponse.getValidProtectionDomains();
+        List<ScaleIODataServer> sdslist;
+        ProtectionDomain protectionDomain = null;
 
-        final List<String> protectionDomainNameList = protectionDomainList.stream().filter(Objects::nonNull)
-                .filter(p -> p.getId().equalsIgnoreCase(protectionDomainId)).map(ProtectionDomain::getName).collect(Collectors.toList());
+        for (ValidProtectionDomain validProtectionDomain : validProtectionDomainList)
+        {
+            protectionDomain = validProtectionDomain.getProtectionDomain();
+            sdslist = protectionDomain.getScaleIODataServers();
 
-        nodeDetail.setProtectionDomainId(protectionDomainId);
-        nodeDetail
-                .setProtectionDomainName(protectionDomainNameList.size() == 1 ? protectionDomainList.get(0).getName() : protectionDomainId);
+            for (ScaleIODataServer sds : sdslist)
+            {
+                if (sds.getNodeData() != null)
+                {
+                    for (NodeDetail nodeDetail : nodeDetails)
+                    {
+                        if ((sds.getNodeData().getSymphonyUuid()).equals(nodeDetail.getId()))
+                        {
+                            nodeDetail.setProtectionDomainName(protectionDomain.getName());
+
+                            if (protectionDomain.getId() != null)
+                            {
+                                nodeDetail.setProtectionDomainId(protectionDomain.getId());
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void createSdsInstance(final List<Host> hosts, final List<ScaleIODataServer> scaleIODataServers, final ScaleIOSDS sds)
