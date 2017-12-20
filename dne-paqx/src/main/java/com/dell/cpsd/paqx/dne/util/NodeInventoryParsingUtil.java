@@ -31,7 +31,13 @@ public class NodeInventoryParsingUtil
     private static final String FAMILY_FIELD       = "Family";
     private static final String SMART_SOURCE       = "smart";
     private static final String SOLID_STATE_DEVICE = "Solid State Device";
-    private static final String DEVICE_PATH_BY_ID  = "/dev/disk/by-id/wwn-";
+
+    public static String getDevicePathById()
+    {
+        return DEVICE_PATH_BY_ID;
+    }
+
+    private static final String DEVICE_PATH_BY_ID = "/dev/disk/by-id/wwn-";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeInventoryParsingUtil.class);
 

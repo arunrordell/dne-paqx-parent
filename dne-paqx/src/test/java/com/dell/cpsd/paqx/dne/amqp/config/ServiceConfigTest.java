@@ -3,6 +3,7 @@
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries. All Rights Reserved. Dell EMC Confidential/Proprietary Information
  * </p>
  */
+
 package com.dell.cpsd.paqx.dne.amqp.config;
 
 import com.dell.cpsd.paqx.dne.amqp.producer.DneProducer;
@@ -14,13 +15,14 @@ import com.dell.cpsd.paqx.dne.transformers.HostToInstallEsxiRequestTransformer;
 import com.dell.cpsd.paqx.dne.transformers.ScaleIORestToScaleIODomainTransformer;
 import com.dell.cpsd.paqx.dne.transformers.StoragePoolEssRequestTransformer;
 import com.dell.cpsd.service.common.client.rpc.DelegatingMessageConsumer;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
 
@@ -30,7 +32,8 @@ import static org.junit.Assert.assertNotNull;
  * Test for {@link ServiceConfig}
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ServiceConfigTest {
+public class ServiceConfigTest
+{
     @Mock
     private DiscoveryInfoToVCenterDomainTransformer discoveryInfoToVCenterDomainTransformer;
 
@@ -60,24 +63,47 @@ public class ServiceConfigTest {
 
     private String replyTo = "test";
 
-    @Mock @Qualifier("addNodeWorkflowSteps")
+    @Mock
+    @Qualifier("addNodeWorkflowSteps")
     private Map<String, Step> addWorkflowSteps;
 
-    @Mock @Qualifier("preProcessWorkflowSteps")
+    @Mock
+    @Qualifier("preProcessWorkflowSteps")
     private Map<String, Step> preWorkflowSteps;
 
-
-    @Test
-    public void testNodeServiceClient() throws Exception {
-        assertNotNull( serviceConfig.nodeServiceClient(delegatingMessageConsumer, dneProducer, replyTo));
-    }
-    @Test
-    public void testAddNodeWorkFlowService() throws Exception {
-        assertNotNull( serviceConfig.addNodeWorkflowService(addWorkflowSteps));
+    @Before
+    public void setUp() throws Exception
+    {
+        ReflectionTestUtils.setField(serviceConfig, "threadCount", 10);
     }
 
     @Test
-    public void testPreprocessWorkflowService() throws Exception {
+    public void testNodeServiceClient() throws Exception
+    {
+        assertNotNull(serviceConfig.nodeServiceClient(delegatingMessageConsumer, dneProducer, replyTo));
+    }
+
+    @Test
+    public void testAddNodeWorkFlowService() throws Exception
+    {
+        assertNotNull(serviceConfig.addNodeWorkflowService(addWorkflowSteps));
+    }
+
+    @Test
+    public void testPreprocessWorkflowService() throws Exception
+    {
         assertNotNull(serviceConfig.preProcessWorkflowService(preWorkflowSteps));
+    }
+
+    @Test
+    public void testDneTaskExecutorService() throws Exception
+    {
+        assertNotNull(serviceConfig.dneTaskExecutorService());
+    }
+
+    @Test
+    public void testAddNodesToSystemDefinitionTaskExecutorService() throws Exception
+    {
+        assertNotNull(serviceConfig.addNodesToSystemDefinitionTaskExecutorService());
     }
 }

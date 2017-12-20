@@ -335,6 +335,31 @@ public class H2DataRepository implements DataServiceRepository
     }
 
     @Override
+    public List<NodeInventory> getNodeInventory() {
+
+        List<NodeInventory> result = null;
+        try
+        {
+            final TypedQuery<NodeInventory> query = entityManager
+                    .createQuery("SELECT ni FROM NodeInventory as ni", NodeInventory.class);
+
+            List<NodeInventory> nodeInventoryList = query.getResultList();
+
+            if (!CollectionUtils.isEmpty(nodeInventoryList))
+            {
+                result = nodeInventoryList;
+            }
+        }
+        catch (NoResultException noResultEx)
+        {
+            //  Do not do anything as the result will be null indicating that no result found.
+            LOG.info("No results found for NodeInventory.");
+        }
+
+        return result;
+    }
+
+    @Override
     @Transactional
     public boolean saveVCenterData(final String jobId, final VCenter vCenterData)
     {

@@ -93,7 +93,7 @@ public class AddNodeToSystemDefinitionTest
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("No converged systems found"));
         }
     }
@@ -113,7 +113,7 @@ public class AddNodeToSystemDefinitionTest
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("No converged system found"));
         }
     }
@@ -134,7 +134,7 @@ public class AddNodeToSystemDefinitionTest
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("No discovered node info"));
         }
     }
@@ -155,7 +155,7 @@ public class AddNodeToSystemDefinitionTest
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("node was not added to the system definition"));
         }
     }
@@ -174,7 +174,7 @@ public class AddNodeToSystemDefinitionTest
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("failed"));
         }
     }

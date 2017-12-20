@@ -10,6 +10,7 @@ import com.dell.cpsd.paqx.dne.domain.node.DiscoveredNodeInfo;
 import com.dell.cpsd.paqx.dne.repository.DataServiceRepository;
 import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
 import com.dell.cpsd.sdk.AMQPClient;
+import com.dell.cpsd.service.cs.credential.service.api.Credential;
 import com.dell.cpsd.service.system.definition.api.Component;
 import com.dell.cpsd.service.system.definition.api.ComponentsFilter;
 import com.dell.cpsd.service.system.definition.api.ConvergedSystem;
@@ -24,30 +25,42 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.SUCCEEDED;
 
-public class AddNodeToSystemDefinitionRunnable implements Runnable
+public class AddNodesToSystemDefinitionRunnable implements Runnable
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AddNodeToSystemDefinitionRunnable.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AddNodesToSystemDefinitionRunnable.class);
 
     private static final String COMPONENT_SERVER_TEMPLATE = "COMMON-DELL-POWEREDGE";
     private final String                processId;
     private final String                activityId;
     private final String                messageId;
-    private final NodeDetail            nodeDetail;
+    private final List<NodeDetail>      nodeDetails;
     private final RuntimeService        runtimeService;
     private final AMQPClient            sdkAMQPClient;
     private final DataServiceRepository repository;
 
-    public AddNodeToSystemDefinitionRunnable(final String processId, final String activityId, final String messageId,
-            final NodeDetail nodeDetail, final RuntimeService runtimeService, final AMQPClient sdkAMQPClient,
+    /**
+     * AddNodesToSystemDefinitionRunnable constructor
+     *
+     * @param processId
+     * @param activityId
+     * @param messageId
+     * @param nodeDetails
+     * @param runtimeService
+     * @param sdkAMQPClient
+     * @param repository
+     */
+    public AddNodesToSystemDefinitionRunnable(final String processId, final String activityId, final String messageId,
+            final List<NodeDetail> nodeDetails, final RuntimeService runtimeService, final AMQPClient sdkAMQPClient,
             final DataServiceRepository repository)
     {
         this.processId = processId;
         this.activityId = activityId;
         this.messageId = messageId;
-        this.nodeDetail = nodeDetail;
+        this.nodeDetails = nodeDetails;
         this.runtimeService = runtimeService;
         this.sdkAMQPClient = sdkAMQPClient;
         this.repository = repository;
@@ -93,39 +106,48 @@ public class AddNodeToSystemDefinitionRunnable implements Runnable
 
             final ConvergedSystem systemToBeUpdated = systemDetails.get(0);
 
-            final DiscoveredNodeInfo nodeInfo = repository.getDiscoveredNodeInfo(nodeDetail.getId());
+            List<Credential> credentialAdditions = new ArrayList<>();
 
-            if (nodeInfo == null)
-            {
-                throw new IllegalStateException("No discovered node info.");
-            }
+            nodeDetails.stream().filter(Objects::nonNull).forEach(nodeDetail -> {
+                final DiscoveredNodeInfo nodeInfo = repository.getDiscoveredNodeInfo(nodeDetail.getId());
 
-            final Component newNode = new Component();
-            final List<String> parentGroups = new ArrayList<>();
-            final List<String> endpoints = new ArrayList<>();
-            parentGroups.add("SystemCompute");
-            endpoints.add("RACKHD-EP");
-            newNode.setUuid(nodeInfo.getSymphonyUuid());
-            newNode.setIdentity(
-                    new Identity("SERVER", nodeInfo.getSymphonyUuid(), nodeInfo.getSymphonyUuid(), nodeInfo.getSerialNumber(), null));
-            newNode.setDefinition(
-                    new Definition(nodeInfo.getProductFamily(), nodeInfo.getProduct(), nodeInfo.getModelFamily(), nodeInfo.getModel()));
-            newNode.setParentGroupUuids(this.mapGroupNamesToUUIDs(parentGroups, systemToBeUpdated.getGroups()));
-            newNode.setEndpoints(new ArrayList<>());
+                if (nodeInfo == null)
+                {
+                    throw new IllegalStateException("No discovered node info.");
+                }
 
-            this.sdkAMQPClient.addComponent(systemToBeUpdated, newNode, endpoints, COMPONENT_SERVER_TEMPLATE);
+                final Component newComponent = new Component();
+                final List<String> parentGroups = new ArrayList<>();
+                final List<String> endpoints = new ArrayList<>();
+                parentGroups.add("SystemCompute");
+                endpoints.add("RACKHD-EP");
+                newComponent.setUuid(nodeInfo.getSymphonyUuid());
+                newComponent.setIdentity(
+                        new Identity("SERVER", nodeInfo.getSymphonyUuid(), nodeInfo.getSymphonyUuid(), nodeInfo.getSerialNumber(), null));
+                newComponent.setDefinition(
+                        new Definition(nodeInfo.getProductFamily(), nodeInfo.getProduct(), nodeInfo.getModelFamily(), nodeInfo.getModel()));
+                newComponent.setParentGroupUuids(this.mapGroupNamesToUUIDs(parentGroups, systemToBeUpdated.getGroups()));
+                newComponent.setEndpoints(new ArrayList<>());
+                List<Credential> newCredentials = this.sdkAMQPClient
+                        .addComponentToConvergedSystem(systemToBeUpdated, newComponent, endpoints, COMPONENT_SERVER_TEMPLATE);
+                credentialAdditions.addAll(newCredentials);
+            });
+
+            this.sdkAMQPClient.createOrUpdateConvergedSystem(systemToBeUpdated, credentialAdditions);
             result = SUCCEEDED;
         }
         catch (Exception ex)
         {
-            final String message =
-                    "Add node to system definition on Node " + nodeDetail.getServiceTag() + " failed! Reason: " + ex.getMessage();
+            final String message = "Add nodes to system definition failed! Reason: " + ex.getMessage();
             LOGGER.error(message);
             result = message;
         }
 
         Execution execution = runtimeService.createExecutionQuery().processInstanceId(processId).activityId(activityId).singleResult();
-        runtimeService.setVariable(execution.getId(), messageId, result);
-        runtimeService.messageEventReceived(messageId, execution.getId());
+        if (execution != null)
+        {
+            runtimeService.setVariable(execution.getId(), messageId, result);
+            runtimeService.messageEventReceived(messageId, execution.getId());
+        }
     }
 }

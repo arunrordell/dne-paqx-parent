@@ -8,6 +8,8 @@ package com.dell.cpsd.paqx.dne.service.delegates;
 
 import com.dell.cpsd.paqx.dne.service.NodeService;
 import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.delegate.BpmnError;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.slf4j.Logger;
@@ -17,8 +19,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.COMPLETED;
-import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.COMPLETED_NODE_DETAILS;
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NOTIFY_NODE_STATUS_COMPLETED_FAILED;
 
 @Component
@@ -52,29 +59,43 @@ public class NotifyNodeDiscoveryToUpdateStatusCompleted extends BaseWorkflowDele
     @Override
     public void delegateExecute(final DelegateExecution delegateExecution)
     {
-        final NodeDetail nd = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
-        updateDelegateStatus("Attempting " + this.taskName + " on Node " + nd.getServiceTag() + ".");
+        final List<NodeDetail> completedNodeDetails = (List<NodeDetail>) delegateExecution.getVariable(COMPLETED_NODE_DETAILS);
 
-        boolean succeeded;
-        try
+        updateDelegateStatus("Attempting " + this.taskName + " on the following Nodes " + StringUtils
+                .join(completedNodeDetails.stream().map(NodeDetail::getServiceTag).collect(Collectors.toList()) + "."));
+
+        List<NodeDetail> failedUpdates = new ArrayList<>();
+
+        completedNodeDetails.stream().filter(Objects::nonNull).forEach(nd -> {
+            try
+            {
+                final boolean succeeded = this.nodeService.notifyNodeAllocationStatus(nd.getId(), COMPLETED);
+
+                if (!succeeded)
+                {
+                    final String message = "Updating node status to completed failed on Node " + nd.getServiceTag() + "failed.";
+                    LOGGER.error(message);
+                    failedUpdates.add(nd);
+                }
+            }
+            catch (Exception e)
+            {
+                final String message =
+                        "An Unexpected Exception occurred attempting to update node status to completed on Node " + nd.getServiceTag()
+                                + ". Reason: ";
+                LOGGER.error(message);
+                failedUpdates.add(nd);
+            }
+        });
+
+        if (CollectionUtils.isNotEmpty(failedUpdates))
         {
-            succeeded = this.nodeService.notifyNodeAllocationStatus(nd.getId(), COMPLETED);
-        }
-        catch (Exception e)
-        {
-            final String message =
-                    "An Unexpected Exception occurred attempting to " + nd.getServiceTag() + " on Node " + nd.getServiceTag()
-                            + ". Reason: ";
-            updateDelegateStatus(message, e);
-            throw new BpmnError(NOTIFY_NODE_STATUS_COMPLETED_FAILED, message + e.getMessage());
-        }
-        if (!succeeded)
-        {
-            final String message = "Updating Node Status on Node " + nd.getServiceTag() + " failed.";
+            final String message = "Updating Node Status to completed failed for the following Nodes: " + StringUtils
+                    .join(failedUpdates.stream().map(NodeDetail::getServiceTag).collect(Collectors.toList()) + ".");
             updateDelegateStatus(message);
             throw new BpmnError(NOTIFY_NODE_STATUS_COMPLETED_FAILED, message);
         }
 
-        updateDelegateStatus(taskName + " on Node " + nd.getServiceTag() + " was successful.");
+        updateDelegateStatus(taskName + " was successful.");
     }
 }

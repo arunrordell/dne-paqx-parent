@@ -6,6 +6,7 @@
 package com.dell.cpsd.paqx.dne.service.delegates.model;
 
 import com.dell.cpsd.service.engineering.standards.DeviceAssignment;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -40,6 +41,12 @@ public class NodeDetail implements Serializable
     private String vMotionManagementSubnetMask;
     private String protectionDomainName;
     private String protectionDomainId;
+
+    @JsonIgnore
+    private boolean inventoryFailed;
+
+    @JsonIgnore
+    private boolean completed;
 
     public NodeDetail()
     {
@@ -311,5 +318,25 @@ public class NodeDetail implements Serializable
     public void setClusterName(final String clusterName)
     {
         this.clusterName = clusterName;
+    }
+
+    public boolean isInventoryFailed()
+    {
+        return inventoryFailed;
+    }
+
+    public void setInventoryFailed(final boolean inventoryFailed)
+    {
+        this.inventoryFailed = inventoryFailed;
+    }
+
+    public boolean isCompleted()
+    {
+        return completed;
+    }
+
+    public void setCompleted(final boolean completed)
+    {
+        this.completed = completed;
     }
 }

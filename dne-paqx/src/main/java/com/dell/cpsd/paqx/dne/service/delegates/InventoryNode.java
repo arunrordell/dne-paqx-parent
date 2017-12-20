@@ -3,6 +3,7 @@
  * Copyright &copy; 2017 Dell Inc. or its subsidiaries. All Rights Reserved. Dell EMC Confidential/Proprietary Information
  * </p>
  */
+
 package com.dell.cpsd.paqx.dne.service.delegates;
 
 import com.dell.cpsd.paqx.dne.domain.node.NodeInventory;
@@ -12,7 +13,7 @@ import com.dell.cpsd.paqx.dne.service.delegates.model.NodeDetail;
 import com.dell.cpsd.service.common.client.exception.ServiceExecutionException;
 import com.dell.cpsd.service.common.client.exception.ServiceTimeoutException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.bpm.engine.delegate.BpmnError;
+import org.apache.commons.collections.MapUtils;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +22,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.INVENTORY_NODE_FAILED;
-import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAILS;
 
 @Component
 @Scope("prototype")
@@ -56,47 +62,60 @@ public class InventoryNode extends BaseWorkflowDelegate
     @Override
     public void delegateExecute(final DelegateExecution delegateExecution)
     {
-        NodeDetail nodeDetail = (NodeDetail) delegateExecution.getVariable(NODE_DETAIL);
-        Object nodeInventoryResponse = null;
-        if (nodeDetail != null && nodeDetail.getId() != null)
+
+        List<NodeDetail> nodeDetails = (List<NodeDetail> ) delegateExecution.getVariable(NODE_DETAILS);
+
+        Map<String, Object> nodeInventoryResponse = null;
+        try
         {
-            try
-            {
-                updateDelegateStatus("Requesting Update Node Inventory for Node " + nodeDetail.getServiceTag());
-                nodeInventoryResponse = nodeService.listNodeInventory(nodeDetail.getId());
-            }
-            catch (ServiceTimeoutException | ServiceExecutionException ex)
-            {
-                final String message = "Update Node Inventory request failed for Node " + nodeDetail.getServiceTag();
-                updateDelegateStatus(message, ex);
-                throw new BpmnError(INVENTORY_NODE_FAILED, message);
-            }
+            updateDelegateStatus("Requesting Update Node Inventory.");
+            nodeInventoryResponse = nodeService.listNodeInventory(null);
         }
-        NodeInventory nodeInventory = null;
-        if (nodeInventoryResponse != null)
+        catch (ServiceTimeoutException | ServiceExecutionException ex)
         {
-            try
-            {
-                nodeInventory = new NodeInventory(nodeDetail.getId(), nodeInventoryResponse);
-            }
-            catch (JsonProcessingException jpe) {
-                final String message = "Update Node Inventory failed due to unrecognized response for Node " + (nodeDetail==null?null:nodeDetail.getServiceTag());
-                updateDelegateStatus(message, jpe);
-                throw new BpmnError(INVENTORY_NODE_FAILED, message);
-            }
+            final String message = "Update Node Inventory request failed.";
+            updateDelegateStatus(message, ex);
+            nodeDetails.stream().filter(Objects::nonNull).forEach(nodeDetail -> nodeDetail.setInventoryFailed(true));
         }
-        boolean isNodeInventorySaved = false;
-        if (nodeInventory != null)
+
+        if (MapUtils.isNotEmpty(nodeInventoryResponse))
         {
-            isNodeInventorySaved = repository.saveNodeInventory(nodeInventory);
+            List<String> nodeIds = new ArrayList<>();
+            nodeInventoryResponse.entrySet().stream().filter(Objects::nonNull).forEach(entry -> {
+                NodeInventory nodeInventory = null;
+                try
+                {
+                    nodeInventory = new NodeInventory(entry.getKey(), entry.getValue());
+                    nodeIds.add(entry.getKey());
+                }
+                catch (JsonProcessingException jpe)
+                {
+                    final String message = "Update Node Inventory failed due to unrecognized response for Node with uuid " + entry.getKey();
+                    updateDelegateStatus(message, jpe);
+                    nodeDetails.stream().filter(Objects::nonNull).forEach(nodeDetail -> nodeDetail.setInventoryFailed(true));
+                }
+
+                boolean isNodeInventorySaved = false;
+                if (nodeInventory != null)
+                {
+                    isNodeInventorySaved = repository.saveNodeInventory(nodeInventory);
+                }
+                if (!isNodeInventorySaved)
+                {
+                    final String message = "Update Node Inventory on Node with uuid " + entry.getKey() + " failed.";
+                    updateDelegateStatus(message);
+                    nodeDetails.stream().filter(Objects::nonNull).forEach(nodeDetail -> nodeDetail.setInventoryFailed(true));
+                }
+            });
+
+            updateDelegateStatus("Update Node Inventory was successful for Nodes " + Arrays.toString(nodeIds.toArray()));
         }
-        if (!isNodeInventorySaved)
+        else
         {
-            final String message = "Update Node Inventory on Node " + nodeDetail.getServiceTag() + " failed.";
+            final String message = "Could not find any node inventory.";
             updateDelegateStatus(message);
-            throw new BpmnError(INVENTORY_NODE_FAILED, message);
+            nodeDetails.stream().filter(Objects::nonNull).forEach(nodeDetail -> nodeDetail.setInventoryFailed(true));
         }
-        updateDelegateStatus("Update Node Inventory was successful for Node " + nodeDetail.getServiceTag());
 
     }
 }

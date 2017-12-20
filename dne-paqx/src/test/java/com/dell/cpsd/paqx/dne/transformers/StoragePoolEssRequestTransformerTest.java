@@ -135,7 +135,7 @@ public class StoragePoolEssRequestTransformerTest
         Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap = buildHostToStorageDeviceMap(true);
         ScaleIOStoragePool scaleIOStoragePool = buildScaleIOStoragePool("1", 12);
 
-        StoragePool storagePool = transformer.collectDevicesInPool(scaleIOStoragePool, hostToStorageDeviceMap);
+        StoragePool storagePool = transformer.collectDevicesInPool(scaleIOStoragePool, hostToStorageDeviceMap, null);
 
         assertNotNull(storagePool);
         assertEquals("1", storagePool.getId());
@@ -155,7 +155,7 @@ public class StoragePoolEssRequestTransformerTest
         Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap = buildHostToStorageDeviceMap(false);
         ScaleIOStoragePool scaleIOStoragePool = buildScaleIOStoragePool("1", 12);
 
-        StoragePool storagePool = transformer.collectDevicesInPool(scaleIOStoragePool, hostToStorageDeviceMap);
+        StoragePool storagePool = transformer.collectDevicesInPool(scaleIOStoragePool, hostToStorageDeviceMap, null);
 
         assertNotNull(storagePool);
         assertEquals("1", storagePool.getId());
@@ -176,7 +176,7 @@ public class StoragePoolEssRequestTransformerTest
         ScaleIOStoragePool scaleIOStoragePool = buildScaleIOStoragePool("1", 12);
 
         EssValidateStoragePoolRequestMessage request = transformer
-                .transform(Collections.singletonList(scaleIOStoragePool), hostToStorageDeviceMap);
+                .transform(Collections.singletonList(scaleIOStoragePool), hostToStorageDeviceMap, null);
         assertNotNull(request.getStoragePools());
         assertEquals(1, request.getStoragePools().size());
         assertNotNull(request.getStoragePools().get(0).getDevices());

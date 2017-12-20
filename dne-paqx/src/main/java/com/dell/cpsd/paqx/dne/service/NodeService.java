@@ -8,6 +8,7 @@ package com.dell.cpsd.paqx.dne.service;
 import com.dell.cpsd.SetObmSettingsRequestMessage;
 import com.dell.cpsd.paqx.dne.domain.Job;
 import com.dell.cpsd.paqx.dne.domain.node.DiscoveredNodeInfo;
+import com.dell.cpsd.paqx.dne.domain.node.NodeInventory;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOData;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOStoragePool;
 import com.dell.cpsd.paqx.dne.domain.vcenter.Host;
@@ -105,11 +106,12 @@ public interface NodeService
     /**
      * List the rackhd node inventory
      *
-     * @return Node Inventory data
+     * @return Map of symphony uuid to Node Inventory data
      * @throws ServiceTimeoutException
      * @throws ServiceExecutionException
      */
-    Object listNodeInventory(String symphonyUUID) throws ServiceTimeoutException, ServiceExecutionException;
+
+    Map<String, Object> listNodeInventory(String symphonyUUID) throws ServiceTimeoutException, ServiceExecutionException;
 
     /**
      * List the validated cluster names
@@ -131,7 +133,8 @@ public interface NodeService
      * @throws ServiceExecutionException
      */
     EssValidateStoragePoolResponseMessage validateStoragePools(List<ScaleIOStoragePool> scaleIOStoragePools, List<Device> newDevices,
-            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap) throws ServiceTimeoutException, ServiceExecutionException;
+            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, Map<String, Device.Type> deviceTypeMap)
+            throws ServiceTimeoutException, ServiceExecutionException;
 
     /**
      * Validate protection domains
@@ -394,6 +397,13 @@ public interface NodeService
      * @return
      */
     String getNodeInventoryData(String symphonyUUID);
+
+    /**
+     * Method to retrive the node inventory data for all nodes
+     *
+     * @return List of node inventory information.
+     */
+    List<NodeInventory> getNodeInventoryDataForAllNodes();
 
     /**
      * Retrieves vCenter hosts from H2 database

@@ -562,7 +562,8 @@ public class AmqpNodeService extends AbstractServiceClient implements NodeServic
      */
     @Override
     public EssValidateStoragePoolResponseMessage validateStoragePools(List<ScaleIOStoragePool> scaleIOStoragePools, List<Device> newDevices,
-            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap) throws ServiceTimeoutException, ServiceExecutionException
+            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, Map<String, Device.Type> deviceTypeMap)
+            throws ServiceTimeoutException, ServiceExecutionException
     {
         com.dell.cpsd.service.engineering.standards.MessageProperties messageProperties = new com.dell.cpsd.service.engineering.standards.MessageProperties();
         messageProperties.setCorrelationId(UUID.randomUUID().toString());
@@ -570,7 +571,7 @@ public class AmqpNodeService extends AbstractServiceClient implements NodeServic
         messageProperties.setReplyTo(replyTo);
 
         EssValidateStoragePoolRequestMessage storageRequestMessage = storagePoolEssRequestTransformer
-                .transform(scaleIOStoragePools, hostToStorageDeviceMap);
+                .transform(scaleIOStoragePools, hostToStorageDeviceMap, deviceTypeMap);
         storageRequestMessage.setMessageProperties(messageProperties);
         storageRequestMessage.setNewDevices(newDevices);
 
@@ -1838,7 +1839,7 @@ public class AmqpNodeService extends AbstractServiceClient implements NodeServic
     }
 
     @Override
-    public Object listNodeInventory(final String symphonyUUID) throws ServiceTimeoutException, ServiceExecutionException
+    public Map<String, Object> listNodeInventory(final String symphonyUUID) throws ServiceTimeoutException, ServiceExecutionException
     {
         MessageProperties messageProperties = new MessageProperties();
         messageProperties.setCorrelationId(UUID.randomUUID().toString());
@@ -2144,6 +2145,11 @@ public class AmqpNodeService extends AbstractServiceClient implements NodeServic
         NodeInventory nodeInventory = repository.getNodeInventory(symphonyUUID);
 
         return nodeInventory == null ? null : nodeInventory.getNodeInventory();
+    }
+
+    @Override
+    public List<NodeInventory> getNodeInventoryDataForAllNodes() {
+        return repository.getNodeInventory();
     }
 
     /*

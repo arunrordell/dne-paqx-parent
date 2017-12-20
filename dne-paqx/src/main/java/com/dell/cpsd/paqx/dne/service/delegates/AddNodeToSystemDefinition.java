@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Scope;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.ADD_NODE_TO_SYSTEM_DEFINITION_FAILED;
+import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.ADD_NODES_TO_SYSTEM_DEFINITION_FAILED;
 import static com.dell.cpsd.paqx.dne.service.delegates.utils.DelegateConstants.NODE_DETAIL;
 
 @org.springframework.stereotype.Component
@@ -138,7 +138,7 @@ public class AddNodeToSystemDefinition extends BaseWorkflowDelegate
         {
             final String message = this.taskName + " on Node " + nodeDetail.getServiceTag() + " failed! Reason: ";
             updateDelegateStatus(message, ex );
-            throw new BpmnError(ADD_NODE_TO_SYSTEM_DEFINITION_FAILED, message + ex.getMessage());
+            throw new BpmnError(ADD_NODES_TO_SYSTEM_DEFINITION_FAILED, message + ex.getMessage());
         }
 
         final String message = this.taskName + " on Node " + nodeDetail.getServiceTag() + " was successful.";

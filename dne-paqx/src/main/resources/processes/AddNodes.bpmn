@@ -5,11 +5,11 @@
       <bpmn:outgoing>SequenceFlow_00j2ul6</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_1cl1kmi" camunda:asyncBefore="true">
-      <bpmn:incoming>SequenceFlow_1igfdtf</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_114yt6n</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="verifySelectedNodes" name="Verify Selected Nodes" camunda:asyncBefore="true" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${verifyNodesSelected}">
       <bpmn:incoming>SequenceFlow_00j2ul6</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0tql36z</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_0b21ifx</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_00j2ul6" sourceRef="StartEvent_1" targetRef="verifySelectedNodes" />
     <bpmn:callActivity id="addNode" name="Adding Nodes" camunda:asyncAfter="true" camunda:exclusive="false" calledElement="addNode">
@@ -17,11 +17,10 @@
         <camunda:in source="NodeDetail" target="NodeDetail" />
         <camunda:in source="ESXiCredentialDetails" target="ESXiCredentialDetails" />
       </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_1l49wyb</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_1igfdtf</bpmn:outgoing>
+      <bpmn:incoming>SequenceFlow_01ru7ei</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1vz43h7</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics camunda:asyncAfter="true" camunda:exclusive="false" camunda:collection="${NodeDetails}" camunda:elementVariable="NodeDetail" />
     </bpmn:callActivity>
-    <bpmn:sequenceFlow id="SequenceFlow_1igfdtf" sourceRef="addNode" targetRef="EndEvent_1cl1kmi" />
     <bpmn:subProcess id="handleErrorSubProcess" name="Handle Error" triggeredByEvent="true">
       <bpmn:startEvent id="StartEvent_10yzwdk" camunda:asyncAfter="true" camunda:exclusive="false">
         <bpmn:outgoing>SequenceFlow_1a5q3fm</bpmn:outgoing>
@@ -33,13 +32,12 @@
       <bpmn:sequenceFlow id="SequenceFlow_1a5q3fm" sourceRef="StartEvent_10yzwdk" targetRef="EndEvent_0cxndfn" />
     </bpmn:subProcess>
     <bpmn:serviceTask id="retrieveDefaultESXiCredentials" name="Default ESXi credentials" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${retrieveDefaultESXiCredentials}">
-      <bpmn:incoming>SequenceFlow_0tql36z</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0b21ifx</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0r5oufv</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_0tql36z" sourceRef="verifySelectedNodes" targetRef="retrieveDefaultESXiCredentials" />
     <bpmn:serviceTask id="configureStoragePools" name="Configure Storage Pools" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${configureStoragePools}">
       <bpmn:incoming>SequenceFlow_0atfvkl</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_1l49wyb</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_01ru7ei</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="configureVCenterClusters" name="Configure VCenter Clusters" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${configureVCenterClusters}">
       <bpmn:incoming>SequenceFlow_0r5oufv</bpmn:incoming>
@@ -52,8 +50,67 @@
     <bpmn:sequenceFlow id="SequenceFlow_0r5oufv" sourceRef="retrieveDefaultESXiCredentials" targetRef="configureVCenterClusters" />
     <bpmn:sequenceFlow id="SequenceFlow_0vt5bmr" sourceRef="configureVCenterClusters" targetRef="configureProtectionDomains" />
     <bpmn:sequenceFlow id="SequenceFlow_0atfvkl" sourceRef="configureProtectionDomains" targetRef="configureStoragePools" />
-    <bpmn:sequenceFlow id="SequenceFlow_1l49wyb" sourceRef="configureStoragePools" targetRef="addNode" />
+    <bpmn:subProcess id="SubProcess_0rm7fpy" name="Add Nodes to System Definition" camunda:asyncAfter="true" camunda:exclusive="false">
+      <bpmn:incoming>SequenceFlow_1vz43h7</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_05uxfxk</bpmn:outgoing>
+      <bpmn:startEvent id="startAddNodesToSystemDefinition">
+        <bpmn:outgoing>SequenceFlow_0bw9wbq</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="endAddNodesToSystemDefinition">
+        <bpmn:incoming>SequenceFlow_0vptn2t</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:serviceTask id="completeAddNodesToSystemDefinition" name="Complete Add Nodes to System Definition" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${completeAddNodesToSystemDefinition}">
+        <bpmn:incoming>SequenceFlow_1v06o9a</bpmn:incoming>
+        <bpmn:incoming>SequenceFlow_0u0cgn6</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_0vptn2t</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:receiveTask id="receiveAddNodesToSystemDefinition" name="Receive Add Nodes to System Definition" messageRef="Message_1psn1mv">
+        <bpmn:incoming>SequenceFlow_0g5l66s</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1v06o9a</bpmn:outgoing>
+      </bpmn:receiveTask>
+      <bpmn:sendTask id="sendAddNodesToSystemDefinition" name="Send Add Nodes to System Definition" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${sendAddNodesToSystemDefinition}">
+        <bpmn:incoming>SequenceFlow_0bw9wbq</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_0g5l66s</bpmn:outgoing>
+      </bpmn:sendTask>
+      <bpmn:endEvent id="endAddNodesToSystemDefinitionError">
+        <bpmn:incoming>SequenceFlow_1a5q65w</bpmn:incoming>
+        <bpmn:incoming>SequenceFlow_1azdq7y</bpmn:incoming>
+        <bpmn:errorEventDefinition errorRef="Error_132ukge" />
+      </bpmn:endEvent>
+      <bpmn:boundaryEvent id="completeAddNodesToSystemDefinitionError" name="Error" camunda:asyncAfter="true" camunda:exclusive="false" attachedToRef="completeAddNodesToSystemDefinition">
+        <bpmn:outgoing>SequenceFlow_1a5q65w</bpmn:outgoing>
+        <bpmn:errorEventDefinition camunda:errorCodeVariable="errorCode" camunda:errorMessageVariable="errorMessage" />
+      </bpmn:boundaryEvent>
+      <bpmn:boundaryEvent id="receiveAddNodesToSystemDefinitionTimeout" name="Timeout&#10;&#10;" attachedToRef="receiveAddNodesToSystemDefinition">
+        <bpmn:outgoing>SequenceFlow_0u0cgn6</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:boundaryEvent id="sendAddNodesToSystemDefinitionError" name="Error" camunda:asyncAfter="true" camunda:exclusive="false" attachedToRef="sendAddNodesToSystemDefinition">
+        <bpmn:outgoing>SequenceFlow_1azdq7y</bpmn:outgoing>
+        <bpmn:errorEventDefinition camunda:errorCodeVariable="errorCode" camunda:errorMessageVariable="errorMessage" />
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_0bw9wbq" sourceRef="startAddNodesToSystemDefinition" targetRef="sendAddNodesToSystemDefinition" />
+      <bpmn:sequenceFlow id="SequenceFlow_0vptn2t" sourceRef="completeAddNodesToSystemDefinition" targetRef="endAddNodesToSystemDefinition" />
+      <bpmn:sequenceFlow id="SequenceFlow_1v06o9a" sourceRef="receiveAddNodesToSystemDefinition" targetRef="completeAddNodesToSystemDefinition" />
+      <bpmn:sequenceFlow id="SequenceFlow_0u0cgn6" sourceRef="receiveAddNodesToSystemDefinitionTimeout" targetRef="completeAddNodesToSystemDefinition" />
+      <bpmn:sequenceFlow id="SequenceFlow_0g5l66s" sourceRef="sendAddNodesToSystemDefinition" targetRef="receiveAddNodesToSystemDefinition" />
+      <bpmn:sequenceFlow id="SequenceFlow_1a5q65w" sourceRef="completeAddNodesToSystemDefinitionError" targetRef="endAddNodesToSystemDefinitionError" />
+      <bpmn:sequenceFlow id="SequenceFlow_1azdq7y" sourceRef="sendAddNodesToSystemDefinitionError" targetRef="endAddNodesToSystemDefinitionError" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="SequenceFlow_1vz43h7" sourceRef="addNode" targetRef="SubProcess_0rm7fpy" />
+    <bpmn:serviceTask id="notifyNodeDiscoveryToUpdateStatusCompleted" name="Complete Node Provisioning" camunda:asyncAfter="true" camunda:exclusive="false" camunda:delegateExpression="${notifyNodeDiscoveryToUpdateStatusCompleted}">
+      <bpmn:incoming>SequenceFlow_05uxfxk</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_114yt6n</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_05uxfxk" sourceRef="SubProcess_0rm7fpy" targetRef="notifyNodeDiscoveryToUpdateStatusCompleted" />
+    <bpmn:sequenceFlow id="SequenceFlow_114yt6n" sourceRef="notifyNodeDiscoveryToUpdateStatusCompleted" targetRef="EndEvent_1cl1kmi" />
+    <bpmn:sequenceFlow id="SequenceFlow_0b21ifx" sourceRef="verifySelectedNodes" targetRef="retrieveDefaultESXiCredentials" />
+    <bpmn:sequenceFlow id="SequenceFlow_01ru7ei" sourceRef="configureStoragePools" targetRef="addNode" />
   </bpmn:process>
+  <bpmn:error id="Error_132ukge" name="Add Nodes To System Definition Failed" errorCode="Add-Nodes-To-System-Definition-Failed" />
+  <bpmn:message id="Message_1psn1mv" name="receiveAddNodesToSystemDefinitionMsgId" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="addNodes">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
@@ -63,9 +120,9 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_1cl1kmi_di" bpmnElement="EndEvent_1cl1kmi">
-        <dc:Bounds x="964" y="928" width="36" height="36" />
+        <dc:Bounds x="964" y="1339" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="937" y="968" width="90" height="12" />
+          <dc:Bounds x="937" y="1379" width="90" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_0vpvwed_di" bpmnElement="verifySelectedNodes">
@@ -81,13 +138,6 @@
       <bpmndi:BPMNShape id="CallActivity_1jviyvw_di" bpmnElement="addNode">
         <dc:Bounds x="932" y="810" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_1igfdtf_di" bpmnElement="SequenceFlow_1igfdtf">
-        <di:waypoint xsi:type="dc:Point" x="982" y="890" />
-        <di:waypoint xsi:type="dc:Point" x="982" y="928" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="952" y="903" width="90" height="12" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="SubProcess_1nqss1w_di" bpmnElement="handleErrorSubProcess" isExpanded="true">
         <dc:Bounds x="1111" y="391" width="147" height="120" />
       </bpmndi:BPMNShape>
@@ -113,13 +163,6 @@
       <bpmndi:BPMNShape id="ServiceTask_19kcz2k_di" bpmnElement="retrieveDefaultESXiCredentials">
         <dc:Bounds x="932" y="275" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_0tql36z_di" bpmnElement="SequenceFlow_0tql36z">
-        <di:waypoint xsi:type="dc:Point" x="982" y="225" />
-        <di:waypoint xsi:type="dc:Point" x="982" y="275" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="997" y="244" width="0" height="12" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ServiceTask_0lzwzbf_di" bpmnElement="configureStoragePools">
         <dc:Bounds x="932" y="682" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -150,7 +193,137 @@
           <dc:Bounds x="997" y="646.5" width="0" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="SequenceFlow_1l49wyb_di" bpmnElement="SequenceFlow_1l49wyb">
+      <bpmndi:BPMNShape id="SubProcess_0rm7fpy_di" bpmnElement="SubProcess_0rm7fpy" isExpanded="true">
+        <dc:Bounds x="701" y="957" width="562" height="189" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1tmsbj5_di" bpmnElement="startAddNodesToSystemDefinition">
+        <dc:Bounds x="721" y="1011" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="559" y="1051" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_15q558u_di" bpmnElement="endAddNodesToSystemDefinition">
+        <dc:Bounds x="1207" y="1011" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1141" y="1051" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1rk1257_di" bpmnElement="completeAddNodesToSystemDefinition">
+        <dc:Bounds x="1069" y="989" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReceiveTask_1arkquz_di" bpmnElement="receiveAddNodesToSystemDefinition">
+        <dc:Bounds x="932" y="989" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_07wiqsg_di" bpmnElement="sendAddNodesToSystemDefinition">
+        <dc:Bounds x="795" y="989" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_10ypqt7_di" bpmnElement="endAddNodesToSystemDefinitionError">
+        <dc:Bounds x="1207" y="1090" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1045" y="1130" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0qh22af_di" bpmnElement="completeAddNodesToSystemDefinitionError">
+        <dc:Bounds x="1151" y="1051" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1156" y="1090" width="25" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_1sn28pi_di" bpmnElement="receiveAddNodesToSystemDefinitionTimeout">
+        <dc:Bounds x="1014" y="1051" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1012" y="1078" width="40" height="38" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0br0s0c_di" bpmnElement="sendAddNodesToSystemDefinitionError">
+        <dc:Bounds x="877" y="1051" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="882" y="1090" width="25" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0bw9wbq_di" bpmnElement="SequenceFlow_0bw9wbq">
+        <di:waypoint xsi:type="dc:Point" x="757" y="1029" />
+        <di:waypoint xsi:type="dc:Point" x="795" y="1029" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="686" y="1008" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0vptn2t_di" bpmnElement="SequenceFlow_0vptn2t">
+        <di:waypoint xsi:type="dc:Point" x="1169" y="1029" />
+        <di:waypoint xsi:type="dc:Point" x="1207" y="1029" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1098" y="1008" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1v06o9a_di" bpmnElement="SequenceFlow_1v06o9a">
+        <di:waypoint xsi:type="dc:Point" x="1032" y="1029" />
+        <di:waypoint xsi:type="dc:Point" x="1069" y="1029" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="962.5" y="1008" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0u0cgn6_di" bpmnElement="SequenceFlow_0u0cgn6">
+        <di:waypoint xsi:type="dc:Point" x="1050" y="1069" />
+        <di:waypoint xsi:type="dc:Point" x="1079" y="1069" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="976.5" y="1048" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0g5l66s_di" bpmnElement="SequenceFlow_0g5l66s">
+        <di:waypoint xsi:type="dc:Point" x="895" y="1029" />
+        <di:waypoint xsi:type="dc:Point" x="932" y="1029" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="825.5" y="1008" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1a5q65w_di" bpmnElement="SequenceFlow_1a5q65w">
+        <di:waypoint xsi:type="dc:Point" x="1187" y="1069" />
+        <di:waypoint xsi:type="dc:Point" x="1225" y="1069" />
+        <di:waypoint xsi:type="dc:Point" x="1225" y="1090" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1116" y="1048" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1azdq7y_di" bpmnElement="SequenceFlow_1azdq7y">
+        <di:waypoint xsi:type="dc:Point" x="895" y="1087" />
+        <di:waypoint xsi:type="dc:Point" x="895" y="1108" />
+        <di:waypoint xsi:type="dc:Point" x="1207" y="1108" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="820" y="1093.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1vz43h7_di" bpmnElement="SequenceFlow_1vz43h7">
+        <di:waypoint xsi:type="dc:Point" x="982" y="890" />
+        <di:waypoint xsi:type="dc:Point" x="982" y="957" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="997" y="916.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_136vwxp_di" bpmnElement="notifyNodeDiscoveryToUpdateStatusCompleted">
+        <dc:Bounds x="932" y="1208" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05uxfxk_di" bpmnElement="SequenceFlow_05uxfxk">
+        <di:waypoint xsi:type="dc:Point" x="982" y="1146" />
+        <di:waypoint xsi:type="dc:Point" x="982" y="1208" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="997" y="1171" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_114yt6n_di" bpmnElement="SequenceFlow_114yt6n">
+        <di:waypoint xsi:type="dc:Point" x="982" y="1288" />
+        <di:waypoint xsi:type="dc:Point" x="982" y="1339" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="997" y="1307.5" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0b21ifx_di" bpmnElement="SequenceFlow_0b21ifx">
+        <di:waypoint xsi:type="dc:Point" x="982" y="225" />
+        <di:waypoint xsi:type="dc:Point" x="982" y="275" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="997" y="244" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_01ru7ei_di" bpmnElement="SequenceFlow_01ru7ei">
         <di:waypoint xsi:type="dc:Point" x="982" y="762" />
         <di:waypoint xsi:type="dc:Point" x="982" y="810" />
         <bpmndi:BPMNLabel>

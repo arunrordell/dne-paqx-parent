@@ -12,6 +12,7 @@ import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOSDS;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOStoragePool;
 import com.dell.cpsd.paqx.dne.domain.vcenter.Host;
 import com.dell.cpsd.paqx.dne.domain.vcenter.HostStorageDevice;
+import com.dell.cpsd.paqx.dne.util.NodeInventoryParsingUtil;
 import com.dell.cpsd.service.engineering.standards.Device;
 import com.dell.cpsd.service.engineering.standards.EssValidateStoragePoolRequestMessage;
 import com.dell.cpsd.service.engineering.standards.StoragePool;
@@ -43,6 +44,9 @@ public class StoragePoolEssRequestTransformer
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StoragePoolEssRequestTransformer.class);
 
+    private static final String UNAVAILABLE      = "unavailable";
+    private static final String DEVICE_ID_PREFIX = "0x";
+
     /**
      * Transforms the scale io storage pools to request object
      *
@@ -51,12 +55,12 @@ public class StoragePoolEssRequestTransformer
      * @return
      */
     public EssValidateStoragePoolRequestMessage transform(List<ScaleIOStoragePool> scaleIOStoragePools,
-            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap)
+            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, Map<String, Device.Type> deviceTypeMap)
     {
         EssValidateStoragePoolRequestMessage requestMessage = new EssValidateStoragePoolRequestMessage();
 
         List<StoragePool> storagePools = scaleIOStoragePools.stream().filter(Objects::nonNull)
-                .map(storagePool -> collectDevicesInPool(storagePool, hostToStorageDeviceMap)).filter(Objects::nonNull)
+                .map(storagePool -> collectDevicesInPool(storagePool, hostToStorageDeviceMap, deviceTypeMap)).filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         requestMessage.setStoragePools(storagePools);
@@ -71,7 +75,7 @@ public class StoragePoolEssRequestTransformer
      * @return
      */
     public StoragePool collectDevicesInPool(ScaleIOStoragePool scaleIOStoragePool,
-            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap)
+            Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, Map<String, Device.Type> deviceTypeMap)
     {
         LOGGER.info("Collecting devices in storage pool: " + scaleIOStoragePool.getName());
         StoragePool storagePool = new StoragePool();
@@ -85,14 +89,15 @@ public class StoragePoolEssRequestTransformer
         if (CollectionUtils.isEmpty(scaleIOStoragePool.getDevices()))
         {
             // for empty storage pools validate that it satisfies useRfcache = false, useRmcache = false, zeroPaddingEnabled = true;
-            if (!scaleIOStoragePool.isUseRfcache() && !scaleIOStoragePool.isUseRmcache() && scaleIOStoragePool.isZeroPaddingEnabled()) {
+            if (!scaleIOStoragePool.isUseRfcache() && !scaleIOStoragePool.isUseRmcache() && scaleIOStoragePool.isZeroPaddingEnabled())
+            {
                 // set the type to SSD for empty pools
-                LOGGER.info("Found empty storage pool " + scaleIOStoragePool.getName() +", setting type to SSD.");
+                LOGGER.info("Found empty storage pool " + scaleIOStoragePool.getName() + ", setting type to SSD.");
                 storagePool.setType(StoragePool.Type.SSD);
             }
             else
             {
-                LOGGER.info("Found empty storage pool " + scaleIOStoragePool.getName() +", flags set incorrectly, so discarding it.");
+                LOGGER.info("Found empty storage pool " + scaleIOStoragePool.getName() + ", flags set incorrectly, so discarding it.");
                 return null;
             }
         }
@@ -116,6 +121,7 @@ public class StoragePoolEssRequestTransformer
                 {
                     Device device = new Device();
                     device.setName(scaleIODevice.getName());
+
                     device.setType(Device.Type.HDD);
 
                     // for the matching hosts in vCenter, extract the information like serialNumber, disk type
@@ -130,14 +136,31 @@ public class StoragePoolEssRequestTransformer
                         if (hostStorageDevice.isSsd())
                         {
                             device.setType(Device.Type.SSD);
-                            // if type = SSD already set on the pool, don't set it again
-                            if (StoragePool.Type.HDD.equals(storagePool.getType()))
-                            {
-                                LOGGER.info("Found atleast one device of type SSD, setting storage pool type to SSD for storage pool: " + storagePool.getName());
-                                storagePool.setType(StoragePool.Type.SSD);
-                            }
                         }
                     }
+                    else
+                    {
+                        // this is for drives which have been added by DNE workflow previously
+                        String deviceId = scaleIODevice.getDeviceCurrentPathName();
+                        if (deviceId.startsWith(NodeInventoryParsingUtil.getDevicePathById())) {
+                            deviceId = deviceId.split(NodeInventoryParsingUtil.getDevicePathById())[1];
+                            if (deviceId.startsWith(DEVICE_ID_PREFIX)) {
+                                deviceId = deviceId.substring(2);
+                            }
+                        }
+                        device.setId(deviceId);
+                        device.setType(deviceTypeMap.get(deviceId) != null ? deviceTypeMap.get(deviceId) : Device.Type.SSD);
+                        device.setSerialNumber(UNAVAILABLE);
+                    }
+                    // if type = SSD already set on the pool, don't set it again
+                    if (Device.Type.SSD.equals(device.getType()) && StoragePool.Type.HDD.equals(storagePool.getType()))
+                    {
+                        LOGGER.info(
+                                "Found atleast one device of type SSD, setting storage pool type to SSD for storage pool: " + storagePool
+                                        .getName());
+                        storagePool.setType(StoragePool.Type.SSD);
+                    }
+
                     devices.add(device);
                 }
             }

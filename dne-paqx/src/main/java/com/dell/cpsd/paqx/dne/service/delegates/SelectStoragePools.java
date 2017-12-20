@@ -7,6 +7,7 @@
 package com.dell.cpsd.paqx.dne.service.delegates;
 
 import com.dell.cpsd.paqx.dne.domain.node.DiscoveredNodeInfo;
+import com.dell.cpsd.paqx.dne.domain.node.NodeInventory;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOData;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOProtectionDomain;
 import com.dell.cpsd.paqx.dne.domain.scaleio.ScaleIOStoragePool;
@@ -73,11 +74,16 @@ public class SelectStoragePools extends BaseWorkflowDelegate
             List<NodeDetail> nodeDetails = (List<NodeDetail>) delegateExecution.getVariable(NODE_DETAILS);
             if (CollectionUtils.isEmpty(nodeDetails))
             {
-                throw new IllegalStateException("The List of Node Detail was not found!  Please add at least one Node Detail and try again.");
+                throw new IllegalStateException(
+                        "The List of Node Detail was not found!  Please add at least one Node Detail and try again.");
             }
 
             Map<String, List<Device>> protectionDomainToDevicesMap = new HashMap<>();
             Map<String, List<Device>> nodeToDeviceMap = new HashMap<>();
+
+            // this is used to determine the type of drives (SSD or HDD), for nodes previously added by DNE workflow
+            // as this information is not available in vcenter
+            Map<String, Device.Type> deviceTypeMap = getDeviceInfoForAllNodes();
 
             populateDeviceMaps(nodeDetails, nodeToDeviceMap, protectionDomainToDevicesMap);
 
@@ -105,8 +111,8 @@ public class SelectStoragePools extends BaseWorkflowDelegate
                 protectionDomainToDevicesMap.entrySet().stream().forEach(pd -> {
                     try
                     {
-                        validateStoragePoolsAndSetResponse(deviceMap, pd.getValue(), hostToStorageDeviceMap, protectionDomains,
-                                pd.getKey());
+                        validateStoragePoolsAndSetResponse(deviceMap, pd.getValue(), hostToStorageDeviceMap, protectionDomains, pd.getKey(),
+                                deviceTypeMap);
                     }
                     catch (ServiceTimeoutException | ServiceExecutionException e)
                     {
@@ -123,7 +129,7 @@ public class SelectStoragePools extends BaseWorkflowDelegate
         }
     }
 
-    public void setDeviceMapToNodeDetail(final List<NodeDetail> nodeDetails, final Map<String, List<Device>> nodeToDeviceMap,
+    protected void setDeviceMapToNodeDetail(final List<NodeDetail> nodeDetails, final Map<String, List<Device>> nodeToDeviceMap,
             final Map<String, DeviceAssignment> deviceMap)
     {
         // set devices to storage pool map back to node
@@ -137,7 +143,7 @@ public class SelectStoragePools extends BaseWorkflowDelegate
         });
     }
 
-    public void populateDeviceMaps(final List<NodeDetail> nodeDetails, final Map<String, List<Device>> nodeToDeviceMap,
+    protected void populateDeviceMaps(final List<NodeDetail> nodeDetails, final Map<String, List<Device>> nodeToDeviceMap,
             final Map<String, List<Device>> protectionDomainToDevicesMap)
     {
         // separate devices based on protection domain, as calls to ESS are based on protection domain
@@ -160,6 +166,19 @@ public class SelectStoragePools extends BaseWorkflowDelegate
         });
     }
 
+    protected Map<String, Device.Type> getDeviceInfoForAllNodes()
+    {
+        Map<String, Device.Type> deviceTypeMap = new HashMap<>();
+        List<NodeInventory> nodeInventoryList = nodeService.getNodeInventoryDataForAllNodes();
+        nodeInventoryList.stream().filter(Objects::nonNull).forEach(nodeInventory -> {
+            List<Device> newDevices = NodeInventoryParsingUtil.parseNewDevices(nodeInventory.getNodeInventory());
+            newDevices.stream().filter(Objects::nonNull).forEach(newDevice -> {
+                deviceTypeMap.put(newDevice.getId(), newDevice.getType());
+            });
+        });
+        return deviceTypeMap;
+    }
+
     /**
      * Validate if the existing storage pools are valid, if not create new one.
      *
@@ -171,9 +190,10 @@ public class SelectStoragePools extends BaseWorkflowDelegate
      * @throws ServiceTimeoutException
      * @throws ServiceExecutionException
      */
-    public void validateStoragePoolsAndSetResponse(Map<String, DeviceAssignment> deviceMap, final List<Device> newDevices,
+    protected void validateStoragePoolsAndSetResponse(Map<String, DeviceAssignment> deviceMap, final List<Device> newDevices,
             final Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, final List<ScaleIOProtectionDomain> protectionDomains,
-            final String protectionDomainId) throws ServiceTimeoutException, ServiceExecutionException
+            final String protectionDomainId, Map<String, Device.Type> deviceTypeMap)
+            throws ServiceTimeoutException, ServiceExecutionException
     {
 
         final ScaleIOProtectionDomain scaleIOProtectionDomain = protectionDomains.stream().filter(Objects::nonNull)
@@ -191,7 +211,7 @@ public class SelectStoragePools extends BaseWorkflowDelegate
         int numberOfIterations = 1;
         int storagePoolNameCounter = 1;
         String storagePoolName = STORAGE_POOL_PREFIX + storagePoolNameCounter;
-        while (!findValidStoragePool(deviceMap, newDevices, hostToStorageDeviceMap, dummyProtectionDomains))
+        while (!findValidStoragePool(deviceMap, newDevices, hostToStorageDeviceMap, dummyProtectionDomains, deviceTypeMap))
         {
             // max 6 attempts to ensure all drives are assigned
             if (numberOfIterations >= 6)
@@ -237,11 +257,11 @@ public class SelectStoragePools extends BaseWorkflowDelegate
      * @throws ServiceExecutionException
      */
     private boolean findValidStoragePool(Map<String, DeviceAssignment> deviceMap, final List<Device> newDevices,
-            final Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, ScaleIOProtectionDomain protectionDomain)
-            throws ServiceTimeoutException, ServiceExecutionException
+            final Map<String, Map<String, HostStorageDevice>> hostToStorageDeviceMap, ScaleIOProtectionDomain protectionDomain,
+            Map<String, Device.Type> deviceTypeMap) throws ServiceTimeoutException, ServiceExecutionException
     {
         EssValidateStoragePoolResponseMessage storageResponseMessage = nodeService
-                .validateStoragePools(protectionDomain.getStoragePools(), newDevices, hostToStorageDeviceMap);
+                .validateStoragePools(protectionDomain.getStoragePools(), newDevices, hostToStorageDeviceMap, deviceTypeMap);
         LOGGER.info("Response from ESS: " + storageResponseMessage);
 
         storageResponseMessage.getWarnings().forEach(f -> updateDelegateStatus(f.getMessage()));
@@ -259,7 +279,7 @@ public class SelectStoragePools extends BaseWorkflowDelegate
         return false;
     }
 
-    public List<Device> getNewDevices(String symphonyUuid)
+    protected List<Device> getNewDevices(String symphonyUuid)
     {
         return NodeInventoryParsingUtil.parseNewDevices(nodeService.getNodeInventoryData(symphonyUuid));
     }

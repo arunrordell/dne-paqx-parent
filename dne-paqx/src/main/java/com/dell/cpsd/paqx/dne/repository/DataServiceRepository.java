@@ -104,6 +104,8 @@ public interface DataServiceRepository
 
     NodeInventory getNodeInventory(String symphonyUUID);
 
+    List<NodeInventory> getNodeInventory();
+
     String getDomainName();
 
     boolean saveDiscoveredNodeInfo(DiscoveredNodeInfo discoveredNodeInfo);

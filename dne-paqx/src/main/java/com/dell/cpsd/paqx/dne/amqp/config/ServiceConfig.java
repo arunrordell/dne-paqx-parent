@@ -102,13 +102,7 @@ public class ServiceConfig
     @Bean("dneTaskExecutorService")
     public ExecutorService dneTaskExecutorService()
     {
-        return Executors.newFixedThreadPool(threadCount, dneTaskExecutorThreadFactory());
-    }
-
-    @Bean
-    public ThreadFactory dneTaskExecutorThreadFactory()
-    {
-        return new ThreadFactory()
+        return Executors.newFixedThreadPool(threadCount, new ThreadFactory()
         {
             private final AtomicInteger idCounter = new AtomicInteger();
             private static final String THREAD_NAME = "dne-task-executor-thread-%s";
@@ -120,7 +114,25 @@ public class ServiceConfig
                     runnable.run();
                 }, String.format(THREAD_NAME, idCounter.incrementAndGet()));
             }
-        };
+        });
+    }
+
+    @Bean("addNodesToSystemDefinitionTaskExecutorService")
+    public ExecutorService addNodesToSystemDefinitionTaskExecutorService()
+    {
+        return Executors.newSingleThreadExecutor(new ThreadFactory()
+        {
+            private final AtomicInteger idCounter = new AtomicInteger();
+            private static final String THREAD_NAME = "add-nodes-to-sys-def-task-executor-thread-%s";
+
+            @Override
+            public Thread newThread(final Runnable runnable)
+            {
+                return new Thread(() -> {
+                    runnable.run();
+                }, String.format(THREAD_NAME, idCounter.incrementAndGet()));
+            }
+        });
     }
 
     @Bean

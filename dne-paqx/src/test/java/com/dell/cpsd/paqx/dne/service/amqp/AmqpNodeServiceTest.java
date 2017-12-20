@@ -2002,7 +2002,7 @@ public class AmqpNodeServiceTest
                 serviceCallback.handleServiceResponse(new ServiceResponse<>(requestId, responseMessage, null));
             }
         };
-        EssValidateStoragePoolResponseMessage response = nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap());
+        EssValidateStoragePoolResponseMessage response = nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap(), null);
         Assert.assertNotNull(response);
     }
 
@@ -2024,7 +2024,7 @@ public class AmqpNodeServiceTest
                 throw new ServiceTimeoutException("TIMEOUT_TEST");
             }
         };
-        nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap());
+        nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap(), null);
         Mockito.verify(dneProducer).publishValidateStorage(any(EssValidateStoragePoolRequestMessage.class));
     }
 
@@ -2047,7 +2047,7 @@ public class AmqpNodeServiceTest
             }
         };
 
-        nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap());
+        nodeService.validateStoragePools(scaleIOStoragePools, newDevices, anyMap(), null);
         Mockito.verify(dneProducer, Mockito.times(1)).publishValidateStorage(any());
     }
 

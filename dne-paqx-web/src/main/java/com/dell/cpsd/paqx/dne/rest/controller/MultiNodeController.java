@@ -4,6 +4,7 @@
  * Dell EMC Confidential/Proprietary Information
  * </p>
  */
+
 package com.dell.cpsd.paqx.dne.rest.controller;
 
 import com.dell.cpsd.paqx.dne.rest.exception.WorkflowNotFoundException;
@@ -28,6 +29,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,15 +72,16 @@ public class MultiNodeController
     }
 
     @CrossOrigin
-    @RequestMapping(path = "/preprocess", method = RequestMethod.POST, consumes = "application/json",
-                    produces = "application/json")
+    @RequestMapping(path = "/preprocess", method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
     public Job startPreProcessWorkflow(@RequestBody List<Node> nodesList) throws InterruptedException, ExecutionException
     {
         Job responseJob = null;
 
         Map<String, Object> inputVariables = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(nodesList)) {
-            List<NodeDetail> nodeDetailsList = nodesList.stream().map(node -> new NodeDetail(node.getId(), node.getServiceTag() )).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(nodesList))
+        {
+            List<NodeDetail> nodeDetailsList = nodesList.stream().map(node -> new NodeDetail(node.getId(), node.getServiceTag()))
+                    .collect(Collectors.toList());
             inputVariables.put(DelegateConstants.NODE_DETAILS, nodeDetailsList);
         }
 
@@ -98,6 +102,7 @@ public class MultiNodeController
 
         Map<String, Object> inputVariables = new HashMap<>();
         inputVariables.put(DelegateConstants.NODE_DETAILS, nodeList);
+        inputVariables.put(DelegateConstants.COMPLETED_NODE_DETAILS, Collections.synchronizedList(new ArrayList<NodeDetail>()));
 
         String jobId = camundaWorkflowService.startWorkflow("addNodes", inputVariables);
         if (jobId != null)
@@ -108,13 +113,9 @@ public class MultiNodeController
         return responseJob;
     }
 
-
-
     @CrossOrigin
     @RequestMapping(path = "/status/{jobId}", method = RequestMethod.GET, produces = "application/json")
-    public Status getStatus(
-            final @PathVariable String jobId)
-            throws WorkflowNotFoundException
+    public Status getStatus(final @PathVariable String jobId) throws WorkflowNotFoundException
     {
         Status status = null;
         try
@@ -127,7 +128,8 @@ public class MultiNodeController
                 throw new WorkflowNotFoundException(HttpStatus.NOT_FOUND.value(), errMsg);
             }
         }
-        catch (JobNotFoundException jnfe) {
+        catch (JobNotFoundException jnfe)
+        {
             throw new WorkflowNotFoundException(HttpStatus.NOT_FOUND.value(), jnfe.getMessage(), jnfe);
         }
         return status;

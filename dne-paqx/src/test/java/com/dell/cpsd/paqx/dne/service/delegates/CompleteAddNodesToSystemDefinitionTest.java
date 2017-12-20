@@ -20,7 +20,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -34,7 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CompleteAddNodeToSystemDefinitionTest
+public class CompleteAddNodesToSystemDefinitionTest
 {
     @Mock
     private AMQPClient sdkAMQPClient;
@@ -42,19 +44,24 @@ public class CompleteAddNodeToSystemDefinitionTest
     @Mock
     private DelegateExecution delegateExecution;
 
-    private CompleteAddNodeToSystemDefinition completeAddNodeToSystemDefinition;
-    private NodeDetail                        nodeDetail;
-    private ConvergedSystem                   convergedSystem;
-    private Component                         component;
+    private CompleteAddNodesToSystemDefinition completeAddNodesToSystemDefinition;
+    private List<NodeDetail>                   completedNodeDetails;
+    private NodeDetail                         nodeDetail;
+    private ConvergedSystem                    convergedSystem;
+    private Component                          component;
 
     @Before
     public void setUp() throws Exception
     {
-        completeAddNodeToSystemDefinition = new CompleteAddNodeToSystemDefinition(sdkAMQPClient);
+        completeAddNodesToSystemDefinition = new CompleteAddNodesToSystemDefinition(sdkAMQPClient);
 
         nodeDetail = new NodeDetail();
         nodeDetail.setId("abc");
         nodeDetail.setServiceTag("abc");
+        nodeDetail.setCompleted(true);
+
+        completedNodeDetails = new ArrayList<>();
+        completedNodeDetails.add(nodeDetail);
 
         component = new Component();
         component.setIdentity(new Identity("SERVER", "abc", "abc", "abc", null));
@@ -67,18 +74,18 @@ public class CompleteAddNodeToSystemDefinitionTest
     @Test
     public void testDelegateExecuteRunnableResultException() throws Exception
     {
-        final String runnableResult = "AddNodeToSystemDefinitionRunnable failed";
-        when(delegateExecution.getVariable(anyString())).thenReturn(nodeDetail, runnableResult);
+        final String runnableResult = "AddNodesToSystemDefinitionRunnable failed";
+        when(delegateExecution.getVariable(anyString())).thenReturn(completedNodeDetails, runnableResult);
 
         try
         {
-            completeAddNodeToSystemDefinition.delegateExecute(delegateExecution);
+            completeAddNodesToSystemDefinition.delegateExecute(delegateExecution);
 
             fail("Expected exception to be thrown here but was not");
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString(runnableResult));
         }
 
@@ -87,18 +94,18 @@ public class CompleteAddNodeToSystemDefinitionTest
     @Test
     public void testDelegateExecuteNoConvergedSystemsFoundException() throws Exception
     {
-        when(delegateExecution.getVariable(anyString())).thenReturn(nodeDetail, DelegateConstants.SUCCEEDED);
+        when(delegateExecution.getVariable(anyString())).thenReturn(completedNodeDetails, DelegateConstants.SUCCEEDED);
         when(sdkAMQPClient.getConvergedSystems()).thenReturn(Collections.emptyList());
 
         try
         {
-            completeAddNodeToSystemDefinition.delegateExecute(delegateExecution);
+            completeAddNodesToSystemDefinition.delegateExecute(delegateExecution);
 
             fail("Expected exception to be thrown here but was not");
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
             assertThat(error.getMessage(), containsString("failed"));
         }
 
@@ -107,21 +114,21 @@ public class CompleteAddNodeToSystemDefinitionTest
     @Test
     public void testDelegateExecuteDiscoveredNodeNotAddedToSystemDefinitionException() throws Exception
     {
-        when(delegateExecution.getVariable(anyString())).thenReturn(nodeDetail, DelegateConstants.SUCCEEDED);
+        when(delegateExecution.getVariable(anyString())).thenReturn(completedNodeDetails, DelegateConstants.SUCCEEDED);
         when(sdkAMQPClient.getConvergedSystems()).thenReturn(Collections.singletonList(convergedSystem));
         when(sdkAMQPClient.getComponents(any())).thenReturn(Collections.singletonList(convergedSystem));
         component.getIdentity().setIdentifier("cba");
 
         try
         {
-            completeAddNodeToSystemDefinition.delegateExecute(delegateExecution);
+            completeAddNodesToSystemDefinition.delegateExecute(delegateExecution);
 
             fail("Expected exception to be thrown here but was not");
         }
         catch (BpmnError error)
         {
-            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODE_TO_SYSTEM_DEFINITION_FAILED));
-            assertThat(error.getMessage(), containsString("discovered node was not added to the system definition"));
+            assertTrue(error.getErrorCode().equals(DelegateConstants.COMPLETE_ADD_NODES_TO_SYSTEM_DEFINITION_FAILED));
+            assertThat(error.getMessage(), containsString("discovered nodes were not added to the system definition"));
         }
 
     }
@@ -129,15 +136,15 @@ public class CompleteAddNodeToSystemDefinitionTest
     @Test
     public void testDelegateExecuteSuccesses() throws Exception
     {
-        when(delegateExecution.getVariable(anyString())).thenReturn(nodeDetail, DelegateConstants.SUCCEEDED);
+        when(delegateExecution.getVariable(anyString())).thenReturn(completedNodeDetails, DelegateConstants.SUCCEEDED);
         when(sdkAMQPClient.getConvergedSystems()).thenReturn(Collections.singletonList(convergedSystem));
         when(sdkAMQPClient.getComponents(any())).thenReturn(Collections.singletonList(convergedSystem));
-        final CompleteAddNodeToSystemDefinition completeAddNodeToSystemDefinitionSpy = spy(completeAddNodeToSystemDefinition);
+        final CompleteAddNodesToSystemDefinition completeAddNodesToSystemDefinitionSpy = spy(completeAddNodesToSystemDefinition);
 
-        completeAddNodeToSystemDefinitionSpy.delegateExecute(delegateExecution);
+        completeAddNodesToSystemDefinitionSpy.delegateExecute(delegateExecution);
 
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(completeAddNodeToSystemDefinitionSpy, times(2)).updateDelegateStatus(captor.capture());
+        verify(completeAddNodesToSystemDefinitionSpy, times(2)).updateDelegateStatus(captor.capture());
         assertThat(captor.getValue(), containsString("was successful"));
     }
 }

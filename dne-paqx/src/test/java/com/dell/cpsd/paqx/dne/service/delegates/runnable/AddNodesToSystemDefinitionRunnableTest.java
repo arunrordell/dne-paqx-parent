@@ -22,17 +22,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AddNodeToSystemDefinitionRunnableTest
+public class AddNodesToSystemDefinitionRunnableTest
 {
     @Mock
     private AMQPClient sdkAMQPClient;
@@ -49,11 +52,12 @@ public class AddNodeToSystemDefinitionRunnableTest
     @Mock
     private Execution execution;
 
-    private AddNodeToSystemDefinitionRunnable addNodeToSystemDefinitionRunnable;
-    private NodeDetail                        nodeDetail;
-    private ConvergedSystem                   convergedSystem;
-    private DiscoveredNodeInfo                discoveredNodeInfo;
-    private Group                             systemComputeGroup;
+    private AddNodesToSystemDefinitionRunnable addNodesToSystemDefinitionRunnable;
+    private NodeDetail                         nodeDetail;
+    private List<NodeDetail>                   completedNodeDetails;
+    private ConvergedSystem                    convergedSystem;
+    private DiscoveredNodeInfo                 discoveredNodeInfo;
+    private Group                              systemComputeGroup;
 
     private String executionId = "executionId";
 
@@ -63,9 +67,13 @@ public class AddNodeToSystemDefinitionRunnableTest
         nodeDetail = new NodeDetail();
         nodeDetail.setId("123456789");
         nodeDetail.setServiceTag("abc");
+        nodeDetail.setCompleted(true);
 
-        addNodeToSystemDefinitionRunnable = new AddNodeToSystemDefinitionRunnable("processId", "activityId", "messageId", nodeDetail,
-                runtimeService, sdkAMQPClient, repository);
+        completedNodeDetails = new ArrayList<>();
+        completedNodeDetails.add(nodeDetail);
+
+        addNodesToSystemDefinitionRunnable = new AddNodesToSystemDefinitionRunnable("processId", "activityId", "messageId",
+                completedNodeDetails, runtimeService, sdkAMQPClient, repository);
 
         convergedSystem = new ConvergedSystem();
         convergedSystem.setUuid("cs-uuid-1");
@@ -89,7 +97,7 @@ public class AddNodeToSystemDefinitionRunnableTest
         when(executionQuery.singleResult()).thenReturn(execution);
         when(execution.getId()).thenReturn(executionId);
 
-        addNodeToSystemDefinitionRunnable.run();
+        addNodesToSystemDefinitionRunnable.run();
 
         ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
         verify(runtimeService).setVariable(anyString(), anyString(), resultCaptor.capture());
@@ -107,7 +115,7 @@ public class AddNodeToSystemDefinitionRunnableTest
         when(executionQuery.singleResult()).thenReturn(execution);
         when(execution.getId()).thenReturn(executionId);
 
-        addNodeToSystemDefinitionRunnable.run();
+        addNodesToSystemDefinitionRunnable.run();
 
         ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
         verify(runtimeService).setVariable(anyString(), anyString(), resultCaptor.capture());
@@ -126,7 +134,7 @@ public class AddNodeToSystemDefinitionRunnableTest
         when(executionQuery.singleResult()).thenReturn(execution);
         when(execution.getId()).thenReturn(executionId);
 
-        addNodeToSystemDefinitionRunnable.run();
+        addNodesToSystemDefinitionRunnable.run();
 
         ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
         verify(runtimeService).setVariable(anyString(), anyString(), resultCaptor.capture());
@@ -143,7 +151,7 @@ public class AddNodeToSystemDefinitionRunnableTest
         when(executionQuery.singleResult()).thenReturn(execution);
         when(execution.getId()).thenReturn(executionId);
 
-        addNodeToSystemDefinitionRunnable.run();
+        addNodesToSystemDefinitionRunnable.run();
 
         ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
         verify(runtimeService).setVariable(anyString(), anyString(), resultCaptor.capture());
@@ -155,6 +163,7 @@ public class AddNodeToSystemDefinitionRunnableTest
     {
         when(sdkAMQPClient.getConvergedSystems()).thenReturn(Collections.singletonList(convergedSystem));
         when(sdkAMQPClient.getComponents(any())).thenReturn(Collections.singletonList(convergedSystem));
+        when(sdkAMQPClient.addComponentToConvergedSystem(any(), any(), anyList(), anyString())).thenReturn(Collections.emptyList());
         when(repository.getDiscoveredNodeInfo(anyString())).thenReturn(discoveredNodeInfo);
         when(runtimeService.createExecutionQuery()).thenReturn(executionQuery);
         when(executionQuery.processInstanceId(anyString())).thenReturn(executionQuery);
@@ -162,7 +171,7 @@ public class AddNodeToSystemDefinitionRunnableTest
         when(executionQuery.singleResult()).thenReturn(execution);
         when(execution.getId()).thenReturn(executionId);
 
-        addNodeToSystemDefinitionRunnable.run();
+        addNodesToSystemDefinitionRunnable.run();
 
         ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
         verify(runtimeService).setVariable(anyString(), anyString(), resultCaptor.capture());

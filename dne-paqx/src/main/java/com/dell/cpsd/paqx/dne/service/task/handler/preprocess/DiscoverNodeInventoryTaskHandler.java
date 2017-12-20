@@ -20,6 +20,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * This class implements the logic to discover RackHD Node Inventory.
  *
@@ -67,9 +69,9 @@ public class DiscoverNodeInventoryTaskHandler extends BaseTaskHandler implements
         try {
             String symphonyUUID = job.getInputParams().getSymphonyUuid();
 
-            Object nodeInventoryResponse = nodeService.listNodeInventory(symphonyUUID);
+            Map<String, Object> nodeInventoryResponse = nodeService.listNodeInventory(symphonyUUID);
             if (nodeInventoryResponse != null) {
-                NodeInventory nodeInventory = new NodeInventory(symphonyUUID, nodeInventoryResponse);
+                NodeInventory nodeInventory = new NodeInventory(symphonyUUID, nodeInventoryResponse.get(symphonyUUID));
                 boolean isNodeInventorySaved = repository.saveNodeInventory(nodeInventory);
 
                 if (isNodeInventorySaved) {
