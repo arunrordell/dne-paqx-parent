@@ -92,16 +92,11 @@ public class SelectProtectionDomainsTest
         scaleIODataList.add(scaleIOData);
         doReturn(scaleIODataList).when(nodeService).listScaleIOData();
 
-        NodeData nodeData= new NodeData();
-        nodeData.setSymphonyUuid("1");
-        NodeData nodeData1= new NodeData();
-        nodeData1.setSymphonyUuid("2");
-
         ScaleIODataServer scaleIODataServer = new ScaleIODataServer();
-        scaleIODataServer.setNodeData(nodeData);
+        scaleIODataServer.setSymphonyUuid("1");
 
         ScaleIODataServer scaleIODataServer1 = new ScaleIODataServer();
-        scaleIODataServer1.setNodeData(nodeData1);
+        scaleIODataServer1.setSymphonyUuid("2");
 
         List<ScaleIODataServer> scaleIODataServerList = new ArrayList<>();
         scaleIODataServerList.add(scaleIODataServer);

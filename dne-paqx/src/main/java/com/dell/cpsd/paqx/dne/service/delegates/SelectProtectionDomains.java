@@ -210,11 +210,11 @@ public class SelectProtectionDomains extends BaseWorkflowDelegate
 
             for (ScaleIODataServer sds : sdslist)
             {
-                if (sds.getNodeData() != null)
+                for (NodeDetail nodeDetail : nodeDetails)
                 {
-                    for (NodeDetail nodeDetail : nodeDetails)
+                    if (sds.getSymphonyUuid() != null)
                     {
-                        if ((sds.getNodeData().getSymphonyUuid()).equals(nodeDetail.getId()))
+                        if ((sds.getSymphonyUuid()).equals(nodeDetail.getId()))
                         {
                             nodeDetail.setProtectionDomainName(protectionDomain.getName());
 
